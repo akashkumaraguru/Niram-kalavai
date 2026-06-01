@@ -19,7 +19,22 @@ import DeleteConfirmModal from "./DeleteConfirmModal";
 export default function GradientMaker() {
   const [gradient, setGradient] = useState(DEFAULT_GRADIENT);
   const [name, setName] = useState("");
-  const [saved, setSaved] = useState([]);
+  const [saved, setSaved] = useState(() => {
+    try {
+      const stored = localStorage.getItem("gradient-presets");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((p) => validateGradientPreset(p))
+            .filter((p) => p !== null);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load saved presets:", e);
+    }
+    return [];
+  });
   const [theme, setTheme] = useState("light");
   const [activeTab, setActiveTab] = useState("canvas"); // 'canvas' | 'mockups'
   const [colorFormat, setColorFormat] = useState("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
@@ -39,14 +54,11 @@ export default function GradientMaker() {
       .map((s) => `${formatColor(s.color, s.opacity ?? 100, colorFormat)} ${s.position.toFixed(1)}%`)
       .join(", ");
       
-    let cssRule = "";
-    if (gradient.type === "linear") {
-      cssRule = `linear-gradient(${gradient.angle}deg, ${stopsFormatted})`;
-    } else if (gradient.type === "conic") {
-      cssRule = `conic-gradient(from ${gradient.angle}deg at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`;
-    } else {
-      cssRule = `radial-gradient(${gradient.shape} farthest-corner at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`;
-    }
+    const cssRule = gradient.type === "linear"
+      ? `linear-gradient(${gradient.angle}deg, ${stopsFormatted})`
+      : gradient.type === "conic"
+      ? `conic-gradient(from ${gradient.angle}deg at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`
+      : `radial-gradient(${gradient.shape} farthest-corner at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`;
     return `background: ${cssRule};`;
   }, [gradient, colorFormat]);
 
@@ -59,35 +71,13 @@ export default function GradientMaker() {
   }, [gradient.stops]);
 
   useEffect(() => {
-    loadSaved();
     document.documentElement.classList.toggle("light", theme === "light");
     const timer = setTimeout(() => {
       setIsAppLoading(false);
     }, 800);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const loadSaved = () => {
-    try {
-      const stored = localStorage.getItem("gradient-presets");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const validated = parsed
-            .map((p) => validateGradientPreset(p))
-            .filter((p) => p !== null);
-          setSaved(validated);
-        } else {
-          setSaved([]);
-        }
-      } else {
-        setSaved([]);
-      }
-    } catch (e) {
-      console.error("Failed to load saved presets:", e);
-      setSaved([]);
-    }
-  };
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -151,7 +141,9 @@ export default function GradientMaker() {
   const copyCSS = async () => {
     try {
       await navigator.clipboard.writeText(cssFull);
+      toast.success("CSS copied to clipboard");
     } catch (err) {
+      console.error(err);
       toast.error("Failed to copy CSS");
     }
   };
@@ -160,7 +152,9 @@ export default function GradientMaker() {
     try {
       const svgMarkup = buildGradientSVG(gradient);
       await navigator.clipboard.writeText(svgMarkup);
+      toast.success("SVG copied to clipboard");
     } catch (err) {
+      console.error(err);
       toast.error("Failed to copy SVG");
     }
   };

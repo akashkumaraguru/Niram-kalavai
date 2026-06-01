@@ -6,7 +6,7 @@ function App() {
   return (
     <div className="App" data-testid="app-root">
       <GradientMaker />
-      <Toaster theme="dark" position="bottom-center" closeButton />
+      <Toaster theme="dark" position="top-center" closeButton />
     </div>
   );
 }

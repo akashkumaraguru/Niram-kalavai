@@ -1,5 +1,4 @@
 export default function PreviewArea({
-  gradient,
   css,
   activeTab,
   setActiveTab,
@@ -27,13 +26,6 @@ export default function PreviewArea({
           style={{ background: css }}
           data-testid="preview-canvas"
         >
-          {(gradient.type === "radial" || gradient.type === "conic") && (
-            <div
-              className="crosshair"
-              style={{ left: `${gradient.pos_x}%`, top: `${gradient.pos_y}%` }}
-              data-testid="preview-crosshair"
-            />
-          )}
         </div>
       ) : (
         <div className="mockups-board fade-in">

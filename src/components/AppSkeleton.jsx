@@ -1,11 +1,12 @@
 import { Moon, Sun } from "lucide-react";
+import logoIcon from "../assets/Logo.svg";
 
 export default function AppSkeleton({ theme, toggleTheme }) {
   return (
     <div className="app-shell skeleton-mode">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-dot" />
+          <img src={logoIcon} alt="Niram Kalavai" className="brand-logo" />
           <span>Niram<span style={{ color: "hsl(var(--accent))" }}> Kalavai</span></span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

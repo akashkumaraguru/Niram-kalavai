@@ -48,7 +48,7 @@ export const buildGradientSVG = (g) => {
     .map((s) => `<stop offset="${s.position}%" stop-color="${s.color}" stop-opacity="${((s.opacity ?? 100) / 100).toFixed(2)}" />`)
     .join("\n    ");
 
-  let gradDef = "";
+  let gradDef;
   if (g.type === "linear") {
     const rad = (g.angle * Math.PI) / 180;
     const x1 = (50 - Math.sin(rad) * 50).toFixed(1);

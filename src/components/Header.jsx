@@ -1,4 +1,5 @@
 import { Code, Copy, ImageDown, Moon, Shuffle, Sun } from "lucide-react";
+import logoIcon from "../assets/Logo.svg";
 
 export default function Header({
   theme,
@@ -11,6 +12,7 @@ export default function Header({
   return (
     <header className="topbar" data-testid="topbar">
       <div className="brand">
+        <img src={logoIcon} alt="Niram Kalavai" className="brand-logo" />
         <span>Niram<span style={{ color: "hsl(var(--accent))" }}> Kalavai</span></span>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
