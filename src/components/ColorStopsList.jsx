@@ -12,7 +12,7 @@ export default function ColorStopsList({
 }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 18, marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 12 }}>
         <div className="section-title" style={{ margin: 0 }}>Stops</div>
         <button className="icon-btn" onClick={addStop} title="Add color stop" disabled={isExtracting}>
           <Plus size={16} />

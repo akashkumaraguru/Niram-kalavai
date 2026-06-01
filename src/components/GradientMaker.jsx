@@ -14,6 +14,7 @@ import AppSkeleton from "./AppSkeleton";
 import Header from "./Header";
 import PreviewArea from "./PreviewArea";
 import ControlsSidebar from "./ControlsSidebar";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 export default function GradientMaker() {
   const [gradient, setGradient] = useState(DEFAULT_GRADIENT);
@@ -25,6 +26,7 @@ export default function GradientMaker() {
   const [activeStopId, setActiveStopId] = useState(DEFAULT_GRADIENT.stops[0].id);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [presetToDelete, setPresetToDelete] = useState(null);
   
   const padRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -194,6 +196,11 @@ export default function GradientMaker() {
       toast.error("Please enter a valid preset name");
       return;
     }
+    const exists = saved.some((p) => p.name.toLowerCase() === presetName.toLowerCase());
+    if (exists) {
+      toast.error("Already this name exists, please give a new name");
+      return;
+    }
     try {
       const newPreset = {
         id: Date.now().toString(),
@@ -218,10 +225,16 @@ export default function GradientMaker() {
 
   const deletePreset = (id, e) => {
     e.stopPropagation();
+    setPresetToDelete(id);
+  };
+
+  const confirmDeletePreset = () => {
+    if (!presetToDelete) return;
     try {
-      const updated = saved.filter((p) => p.id !== id);
+      const updated = saved.filter((p) => p.id !== presetToDelete);
       localStorage.setItem("gradient-presets", JSON.stringify(updated));
       setSaved(updated);
+      setPresetToDelete(null);
     } catch (e) {
       console.error(e);
       toast.error("Failed to delete preset");
@@ -409,6 +422,13 @@ export default function GradientMaker() {
         flipGradient={flipGradient}
         rotateGradient={rotateGradient}
       />
+      {presetToDelete && (
+        <DeleteConfirmModal
+          presetName={saved.find((p) => p.id === presetToDelete)?.name || "this preset"}
+          onConfirm={confirmDeletePreset}
+          onCancel={() => setPresetToDelete(null)}
+        />
+      )}
     </div>
   );
 }

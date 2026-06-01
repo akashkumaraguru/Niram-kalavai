@@ -19,9 +19,10 @@ export default function PresetSaveBox({ name, setName, savePreset }) {
             color: "hsl(var(--foreground))",
             borderRadius: 6,
             fontSize: 13,
+            marginTop:10
           }}
         />
-        <button className="btn-pill primary" onClick={savePreset} data-testid="btn-save-preset">
+        <button className="btn-pill primary" onClick={savePreset} data-testid="btn-save-preset" style={{borderRadius:8, marginTop:10}}>
           <Save size={14} /> Save
         </button>
       </div>
