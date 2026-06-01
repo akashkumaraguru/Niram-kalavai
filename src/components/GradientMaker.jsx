@@ -165,7 +165,7 @@ export default function GradientMaker() {
 
   const randomize = () => {
     const stops = Array.from({ length: 3 + Math.floor(Math.random() * 2) }).map((_, i, arr) => ({
-      id: `r_${i}_${Date.now()}`,
+      id: `r_${i}_${Date.now()}_${Math.random()}`,
       color: randomHex(),
       position: Number(((i / (arr.length - 1)) * 100).toFixed(1)),
       opacity: 100,
@@ -176,6 +176,8 @@ export default function GradientMaker() {
       angle: Math.floor(Math.random() * 360),
       pos_x: Math.floor(Math.random() * 100),
       pos_y: Math.floor(Math.random() * 100),
+      shape: "circle",
+      size: "farthest-corner",
       stops,
     };
     setGradient(nextGrad);

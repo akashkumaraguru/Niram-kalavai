@@ -39,7 +39,7 @@ export const buildGradientCSS = (g) => {
     return `conic-gradient(from ${g.angle}deg at ${g.pos_x}% ${g.pos_y}%, ${stops})`;
   }
   // radial
-  return `radial-gradient(${g.shape} farthest-corner at ${g.pos_x}% ${g.pos_y}%, ${stops})`;
+  return `radial-gradient(${g.shape || "circle"} farthest-corner at ${g.pos_x}% ${g.pos_y}%, ${stops})`;
 };
 
 export const buildGradientSVG = (g) => {
