@@ -23,7 +23,7 @@ export default function AppSkeleton({ theme, toggleTheme }) {
           <div className="skeleton-block shimmer" style={{ width: 80, height: 32 }} />
           <div className="skeleton-block shimmer" style={{ width: 120, height: 32 }} />
         </div>
-        <div className="preview-canvas skeleton-block shimmer" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="preview-Gradient skeleton-block shimmer" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="spinner" />
         </div>
       </main>

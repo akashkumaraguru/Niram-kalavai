@@ -4,17 +4,20 @@ import {
   DEFAULT_GRADIENT,
   buildGradientCSS,
   buildGradientSVG,
+  buildNoisySVG,
+  encodeSVGForCSS,
   exportGradientPNG,
+  exportNoisyGradientPNG,
   formatColor,
   hexToRgb,
   randomHex,
   validateGradientPreset
 } from "../lib/gradientUtils";
 import AppSkeleton from "./AppSkeleton";
-import Header from "./Header";
-import PreviewArea from "./PreviewArea";
 import ControlsSidebar from "./ControlsSidebar";
 import DeleteConfirmModal from "./DeleteConfirmModal";
+import Header from "./Header";
+import PreviewArea from "./PreviewArea";
 
 export default function GradientMaker() {
   const [gradient, setGradient] = useState(DEFAULT_GRADIENT);
@@ -36,12 +39,13 @@ export default function GradientMaker() {
     return [];
   });
   const [theme, setTheme] = useState("light");
-  const [activeTab, setActiveTab] = useState("canvas"); // 'canvas' | 'mockups'
+  const [activeTab, setActiveTab] = useState("Gradient"); // 'Gradient' | 'mockups'
   const [colorFormat, setColorFormat] = useState("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
   const [activeStopId, setActiveStopId] = useState(DEFAULT_GRADIENT.stops[0].id);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [presetToDelete, setPresetToDelete] = useState(null);
+  const [ratio, setRatio] = useState("fluid"); // 'fluid' | '1:1' | '4:5' | '16:9' | '9:16' | '19:6' | '6:19'
   
   const padRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -61,6 +65,16 @@ export default function GradientMaker() {
       : `radial-gradient(${gradient.shape} farthest-corner at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`;
     return `background: ${cssRule};`;
   }, [gradient, colorFormat]);
+
+  const noisySVG = useMemo(() => {
+    return buildNoisySVG(gradient, ratio);
+  }, [gradient, ratio]);
+
+  const noisyCSS = useMemo(() => {
+    return `background-image: url("data:image/svg+xml,${encodeSVGForCSS(noisySVG)}");`;
+  }, [noisySVG]);
+
+  const displayedCSS = activeTab === "noisy" ? noisyCSS : cssFull;
 
   const sliderTrackBackground = useMemo(() => {
     const stops = [...gradient.stops]
@@ -140,7 +154,7 @@ export default function GradientMaker() {
 
   const copyCSS = async () => {
     try {
-      await navigator.clipboard.writeText(cssFull);
+      await navigator.clipboard.writeText(displayedCSS);
       toast.success("CSS copied to clipboard");
     } catch (err) {
       console.error(err);
@@ -150,7 +164,7 @@ export default function GradientMaker() {
 
   const copySVG = async () => {
     try {
-      const svgMarkup = buildGradientSVG(gradient);
+      const svgMarkup = activeTab === "noisy" ? noisySVG : buildGradientSVG(gradient);
       await navigator.clipboard.writeText(svgMarkup);
       toast.success("SVG copied to clipboard");
     } catch (err) {
@@ -160,7 +174,21 @@ export default function GradientMaker() {
   };
 
   const downloadPNG = () => {
-    exportGradientPNG(gradient, 1920, 1080, `gradient-${Date.now()}.png`);
+    let width = 1920;
+    let height = 1080;
+    
+    if (ratio === "1:1") { width = 1200; height = 1200; }
+    else if (ratio === "4:5") { width = 1080; height = 1350; }
+    else if (ratio === "9:16") { width = 1080; height = 1920; }
+    else if (ratio === "19:6") { width = 1900; height = 600; }
+    else if (ratio === "6:19") { width = 600; height = 1900; }
+    else if (ratio === "16:9") { width = 1920; height = 1080; }
+
+    if (activeTab === "noisy") {
+      exportNoisyGradientPNG(noisySVG, width, height, `noisy-gradient-${Date.now()}.png`);
+    } else {
+      exportGradientPNG(gradient, width, height, `gradient-${Date.now()}.png`);
+    }
   };
 
   const randomize = () => {
@@ -388,8 +416,11 @@ export default function GradientMaker() {
       <PreviewArea
         gradient={gradient}
         css={css}
+        noisySVG={noisySVG}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        ratio={ratio}
+        setRatio={setRatio}
       />
       <ControlsSidebar
         gradient={gradient}
@@ -410,13 +441,14 @@ export default function GradientMaker() {
         saved={saved}
         selectPreset={selectPreset}
         deletePreset={deletePreset}
-        cssFull={cssFull}
+        cssFull={displayedCSS}
         colorFormat={colorFormat}
         setColorFormat={setColorFormat}
         padRef={padRef}
         onPadClick={onPadClick}
         flipGradient={flipGradient}
         rotateGradient={rotateGradient}
+        activeTab={activeTab}
       />
       {presetToDelete && (
         <DeleteConfirmModal

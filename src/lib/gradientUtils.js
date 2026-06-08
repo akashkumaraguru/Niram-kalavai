@@ -1,4 +1,4 @@
-// Gradient utilities: build CSS strings and export to PNG via canvas
+// Gradient utilities: build CSS strings and export to PNG via Gradient
 export const DEFAULT_GRADIENT = {
   type: "radial",
   angle: 135,
@@ -12,6 +12,11 @@ export const DEFAULT_GRADIENT = {
     { id: "3", color: "#0B4FA0", position: 62, opacity: 100 },
     { id: "4", color: "#03132B", position: 100, opacity: 100 },
   ],
+  chaos: 0.5,
+  grain: 0.3,
+  seed: 1,
+  blur: 150,
+  pattern: "fine",
 };
 
 const sortStops = (stops) => [...stops].sort((a, b) => a.position - b.position);
@@ -78,7 +83,7 @@ export const buildGradientSVG = (g) => {
 </svg>`;
 };
 
-// Export current gradient to a PNG by drawing on an offscreen canvas
+// Export current gradient to a PNG by drawing on an offscreen Gradient
 export const exportGradientPNG = (g, width = 1920, height = 1080, filename = "gradient.png") => {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -5069,30 +5074,30 @@ export const formatColor = (hex, opacity, format) => {
 export const validateGradientPreset = (preset) => {
   if (!preset || typeof preset !== "object") return null;
   if (typeof preset.id !== "string" || typeof preset.name !== "string") return null;
-  
+
   const config = preset.config;
   if (!config || typeof config !== "object") return null;
   if (!["linear", "radial", "conic"].includes(config.type)) return null;
-  
+
   const angle = Number(config.angle);
   const posX = Number(config.pos_x);
   const posY = Number(config.pos_y);
   if (isNaN(angle) || isNaN(posX) || isNaN(posY)) return null;
-  
+
   if (!Array.isArray(config.stops) || config.stops.length < 2) return null;
-  
+
   const validatedStops = [];
   for (const stop of config.stops) {
     if (!stop || typeof stop !== "object") return null;
     const pos = Number(stop.position);
     const op = Number(stop.opacity ?? 100);
     if (isNaN(pos) || isNaN(op)) return null;
-    
+
     // Clean and validate hex color format
     let color = String(stop.color || "#000000").trim();
     if (!color.startsWith("#")) color = `#${color}`;
     if (!/^#[0-9A-Fa-f]{3,8}$/.test(color)) return null;
-    
+
     validatedStops.push({
       id: String(stop.id || Math.random()),
       color,
@@ -5100,7 +5105,7 @@ export const validateGradientPreset = (preset) => {
       opacity: Math.max(0, Math.min(100, op)),
     });
   }
-  
+
   return {
     id: preset.id,
     name: preset.name.replace(/[<>]/g, "").slice(0, 32).trim(), // Strip HTML tags and restrict size
@@ -5111,9 +5116,170 @@ export const validateGradientPreset = (preset) => {
       pos_y: Math.max(0, Math.min(100, posY)),
       shape: ["circle", "ellipse"].includes(config.shape) ? config.shape : "circle",
       size: config.size || "farthest-corner",
-      stops: validatedStops
+      stops: validatedStops,
+      chaos: typeof config.chaos === "number" ? Math.max(0, Math.min(1, config.chaos)) : 0.5,
+      grain: typeof config.grain === "number" ? Math.max(0, Math.min(1, config.grain)) : 0.3,
+      seed: typeof config.seed === "number" ? config.seed : 1,
+      blur: typeof config.blur === "number" ? Math.max(10, Math.min(300, config.blur)) : 150,
+      pattern: typeof config.pattern === "string" ? config.pattern : "fine",
     }
   };
+};
+
+export const PATTERNS = [
+  { id: "fine", label: "Fine Grain", type: "fractalNoise", frequency: 0.75 },
+  { id: "coarse", label: "Coarse Grain", type: "fractalNoise", frequency: 0.35 },
+  { id: "sand", label: "Soft Sand", type: "fractalNoise", frequency: 0.5 },
+  { id: "velvet", label: "Washed Velvet", type: "fractalNoise", frequency: 0.2 },
+  { id: "clouds", label: "Cloudy Waves", type: "fractalNoise", frequency: 0.01 },
+  { id: "silk", label: "Wavy Silk", type: "turbulence", frequency: 0.008 },
+  { id: "waves", label: "Waves & Marble", type: "turbulence", frequency: 0.015 },
+  { id: "ripples", label: "Liquid Ripples", type: "turbulence", frequency: 0.04 },
+  { id: "topographic", label: "Topographic Lines", type: "turbulence", frequency: 0.005 },
+  { id: "turbulent", label: "Turbulent Flow", type: "turbulence", frequency: 0.07 },
+];
+
+// Generates a self-contained SVG for the noisy gradient
+export const buildNoisySVG = (g, ratio = "fluid") => {
+  const stops = g.stops || [];
+  const chaos = g.chaos ?? 0.5;
+  const grain = g.grain ?? 0.3;
+  const seed = g.seed ?? 1;
+  const blurVal = g.blur ?? 150;
+  const patternId = g.pattern ?? "fine";
+
+  const baseColor = stops[0]?.color || "#ffffff";
+
+  // Deterministic pseudo-random number generator
+  const pseudoRandom = (s, index, offset) => {
+    const x = Math.sin(s * 13.1 + index * 37.7 + offset * 97.3) * 10000;
+    return x - Math.floor(x);
+  };
+
+  // Resolve pattern settings
+  const pattern = PATTERNS.find(p => p.id === patternId) || PATTERNS[0];
+  const noiseType = pattern.type;
+  const baseFreq = pattern.frequency;
+
+  // Determine viewBox dimensions based on aspect ratio
+  let viewWidth = 1000;
+  let viewHeight = 1000;
+
+  if (ratio !== "fluid") {
+    const parts = ratio.split(":");
+    const w = Number(parts[0]);
+    const h = Number(parts[1]);
+    if (w > h) {
+      viewWidth = 1000;
+      viewHeight = Math.round((h / w) * 1000);
+    } else {
+      viewHeight = 1000;
+      viewWidth = Math.round((w / h) * 1000);
+    }
+  }
+
+  const blobCount = Math.max(6, stops.length * 2);
+  const blobs = [];
+
+  for (let i = 0; i < blobCount; i++) {
+    const stop = stops[i % stops.length];
+    const color = stop.color;
+
+    // Distribute base positions evenly in a circle around the center
+    const angle = (i / blobCount) * Math.PI * 2;
+    const baseDist = Math.min(viewWidth, viewHeight) * 0.25;
+    const baseCx = viewWidth / 2 + Math.cos(angle) * baseDist;
+    const baseCy = viewHeight / 2 + Math.sin(angle) * baseDist;
+    const baseR = Math.min(viewWidth, viewHeight) * 0.35;
+
+    const r1 = pseudoRandom(seed, i, 1);
+    const r2 = pseudoRandom(seed, i, 2);
+    const r3 = pseudoRandom(seed, i, 3);
+
+    const randX = r1 * 2 - 1;
+    const randY = r2 * 2 - 1;
+    const randR = r3 * 2 - 1;
+
+    const cx = baseCx + randX * (viewWidth * 0.35) * chaos;
+    const cy = baseCy + randY * (viewHeight * 0.35) * chaos;
+    const r = baseR + randR * (baseR * 0.45) * chaos;
+    const opacity = 0.7 + (r3 * 0.25); // 0.7 to 0.95
+
+    blobs.push({
+      cx: Math.max(-viewWidth * 0.2, Math.min(viewWidth * 1.2, cx)),
+      cy: Math.max(-viewHeight * 0.2, Math.min(viewHeight * 1.2, cy)),
+      r: Math.max(100, r),
+      color,
+      opacity
+    });
+  }
+
+  const blobElements = blobs.map((b) =>
+    `<circle cx="${b.cx.toFixed(0)}" cy="${b.cy.toFixed(0)}" r="${b.r.toFixed(0)}" fill="${b.color}" opacity="${b.opacity.toFixed(2)}" filter="url(#blur)" />`
+  ).join("\n    ");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${viewWidth} ${viewHeight}" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="blur" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="${blurVal}" />
+    </filter>
+    <filter id="whiteNoise">
+      <feTurbulence type="${noiseType}" baseFrequency="${baseFreq}" numOctaves="3" result="noise" />
+      <feColorMatrix type="matrix" in="noise" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1 0 0 0 -0.45" />
+    </filter>
+    <filter id="darkNoise">
+      <feTurbulence type="${noiseType}" baseFrequency="${baseFreq}" numOctaves="3" result="noise" />
+      <feColorMatrix type="matrix" in="noise" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1 0 0 0 0.55" />
+    </filter>
+  </defs>
+  <rect width="${viewWidth}" height="${viewHeight}" fill="${baseColor}" />
+  <g>
+    ${blobElements}
+  </g>
+  <rect width="${viewWidth}" height="${viewHeight}" fill="transparent" filter="url(#whiteNoise)" opacity="${(grain * 1.1).toFixed(2)}" />
+  <rect width="${viewWidth}" height="${viewHeight}" fill="transparent" filter="url(#darkNoise)" opacity="${(grain * 1.1).toFixed(2)}" />
+</svg>`;
+};
+
+// URL-encodes an SVG string for use as a background-image URI
+export const encodeSVGForCSS = (svgString) => {
+  return svgString
+    .replace(/%/g, "%25")
+    .replace(/#/g, "%23")
+    .replace(/{/g, "%7B")
+    .replace(/}/g, "%7D")
+    .replace(/</g, "%3C")
+    .replace(/>/g, "%3E")
+    .replace(/\s+/g, " ");
+};
+
+// Renders the noisy gradient SVG to Canvas and saves as PNG
+export const exportNoisyGradientPNG = (svgString, width = 1920, height = 1080, filename = "noisy-gradient.png") => {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+
+  const img = new Image();
+  const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+
+  img.onload = () => {
+    ctx.drawImage(img, 0, 0, width, height);
+    canvas.toBlob((blob) => {
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+    }, "image/png");
+    URL.revokeObjectURL(url);
+  };
+
+  img.src = url;
 };
 
 
