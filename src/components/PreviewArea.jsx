@@ -302,7 +302,7 @@ export default function PreviewArea({
       )}
       <div className="preview-footer-credits" style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 16, fontSize: "12px", color: "hsl(var(--muted-foreground))" }}>
         <span>
-          Made with ❤️ by{" "}
+          Built with ❤️ by{" "}
           <a
             href="https://www.linkedin.com/in/akash-kumaraguru/"
             target="_blank"
