@@ -9,6 +9,8 @@ export default function PreviewArea({
   ratio,
   setRatio,
   gradient,
+  isSidebarCollapsed,
+  setIsSidebarCollapsed,
 }) {
   const getGradientStyle = () => {
     if (ratio === "fluid") {
@@ -59,8 +61,8 @@ export default function PreviewArea({
 
   return (
     <main className="preview-area" data-testid="preview-area">
-      <div className="preview-header-controls" style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", gap: 48, marginBottom: 16 }}>
-        <div className="preview-tabs" style={{ marginBottom: 0 }}>
+      <div className="preview-header-controls">
+        <div className="preview-tabs">
           <button 
             className={`preview-tab-btn ${activeTab === "Gradient" ? "active" : ""}`}
             onClick={() => setActiveTab("Gradient")}
@@ -82,7 +84,7 @@ export default function PreviewArea({
         </div>
 
         {activeTab === "noisy" && (
-          <div className="ratio-selector" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div className="ratio-selector">
             <span className="ratio-label" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginRight: 6, fontWeight: 600 }}>Ratio:</span>
             {["fluid", "1:1", "4:5", "16:9", "9:16", "19:6", "6:19"].map((r) => (
               <button
@@ -94,6 +96,27 @@ export default function PreviewArea({
               </button>
             ))}
           </div>
+        )}
+
+        {activeTab === "mockups" && (
+          <button
+            className="btn-pill"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", height: "auto", borderRadius: "6px" }}
+            title={isSidebarCollapsed ? "Show controls sidebar" : "Hide controls sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevrons-left"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>
+                <span className="btn-text" style={{ fontSize: 12 }}></span>
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevrons-right"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>
+                <span className="btn-text" style={{ fontSize: 12 }}></span>
+              </>
+            )}
+          </button>
         )}
       </div>
 

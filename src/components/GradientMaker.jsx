@@ -40,6 +40,17 @@ export default function GradientMaker() {
   });
   const [theme, setTheme] = useState("light");
   const [activeTab, setActiveTab] = useState("Gradient"); // 'Gradient' | 'mockups'
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === "mockups") {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
+  };
+
   const [colorFormat, setColorFormat] = useState("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
   const [activeStopId, setActiveStopId] = useState(DEFAULT_GRADIENT.stops[0].id);
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -404,7 +415,7 @@ export default function GradientMaker() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSidebarCollapsed && activeTab === "mockups" ? "sidebar-collapsed" : ""}`}>
       <Header
         theme={theme}
         toggleTheme={toggleTheme}
@@ -418,9 +429,11 @@ export default function GradientMaker() {
         css={css}
         noisySVG={noisySVG}
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         ratio={ratio}
         setRatio={setRatio}
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
       />
       <ControlsSidebar
         gradient={gradient}

@@ -96,6 +96,20 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
   body { overflow: auto; }
 }
 
+/* Sidebar Collapsed Styles */
+.app-shell.sidebar-collapsed {
+  grid-template-columns: 1fr 0px;
+}
+.app-shell.sidebar-collapsed .controls {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .app-shell.sidebar-collapsed {
+    grid-template-rows: 56px 1fr;
+  }
+}
+
 .topbar {
   grid-column: 1 / -1;
   display: flex;
@@ -785,11 +799,28 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
   background: hsl(var(--secondary)) !important;
 }
 
+/* Preview Header Controls */
+.preview-header-controls {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ratio-selector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 /* Preview Tabs */
 .preview-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 .preview-tab-btn {
   padding: 8px 18px;
@@ -1263,10 +1294,10 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
   .topbar {
     padding: 0 16px;
   }
-  .btn-pill .btn-text {
+  .topbar .btn-pill .btn-text {
     display: none !important; /* Hide button text on mobile/tablet, keep icons only */
   }
-  .btn-pill {
+  .topbar .btn-pill {
     padding: 0 !important;
     width: 36px !important;
     height: 36px !important;
@@ -1274,14 +1305,23 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
     justify-content: center !important;
     flex-shrink: 0 !important;
   }
-  .btn-pill svg {
+  .topbar .btn-pill svg {
     margin: 0 !important;
+  }
+  .preview-header-controls {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
   }
 }
 
 @media (max-width: 600px) {
   .preview-area {
     padding: 16px 12px;
+  }
+  .preview-tab-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
   }
   .mockup-gradient-text {
     font-size: 28px !important;
@@ -1304,6 +1344,10 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
 @media (max-width: 480px) {
   .brand span {
     display: none !important; /* Hide text logo on small mobile viewports */
+  }
+  .preview-tab-btn {
+    padding: 6px 8px !important;
+    font-size: 11px !important;
   }
   .custom-stop-row {
     padding: 6px 8px !important;
