@@ -1,4 +1,3 @@
-import { useState } from "react";
 import logoIcon from "../assets/Logo.svg";
 
 export default function PreviewArea({
@@ -301,6 +300,21 @@ export default function PreviewArea({
           </div>
         </div>
       )}
+      <div className="preview-footer-credits" style={{ display: "flex", justifyContent: "center", alignItems: "center", marginTop: 16, fontSize: "12px", color: "hsl(var(--muted-foreground))" }}>
+        <span>
+          Made with ❤️ by{" "}
+          <a
+            href="https://www.linkedin.com/in/akash-kumaraguru/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "hsl(var(--accent))", textDecoration: "none", fontWeight: 500 }}
+            onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+            onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+          >
+            Akash Kumaraguru
+          </a>
+        </span>
+      </div>
     </main>
   );
 }
