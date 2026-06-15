@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -11,8 +13,11 @@ import {
   formatColor,
   hexToRgb,
   randomHex,
-  validateGradientPreset
-} from "../lib/gradientUtils";
+  validateGradientPreset,
+  GradientConfig,
+  ColorStop,
+  GradientPreset
+} from "@/lib/gradientUtils";
 import AppSkeleton from "./AppSkeleton";
 import ControlsSidebar from "./ControlsSidebar";
 import DeleteConfirmModal from "./DeleteConfirmModal";
@@ -20,29 +25,32 @@ import Header from "./Header";
 import PreviewArea from "./PreviewArea";
 
 export default function GradientMaker() {
-  const [gradient, setGradient] = useState(DEFAULT_GRADIENT);
-  const [name, setName] = useState("");
-  const [saved, setSaved] = useState(() => {
+  const [gradient, setGradient] = useState<GradientConfig>(DEFAULT_GRADIENT);
+  const [name, setName] = useState<string>("");
+  const [saved, setSaved] = useState<GradientPreset[]>([]);
+  const [theme, setTheme] = useState<string>("light");
+  const [activeTab, setActiveTab] = useState<string>("Gradient"); // 'Gradient' | 'mockups'
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Load presets on mount safely on the client side
+  useEffect(() => {
     try {
       const stored = localStorage.getItem("gradient-presets");
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed
+          const validated = parsed
             .map((p) => validateGradientPreset(p))
-            .filter((p) => p !== null);
+            .filter((p): p is GradientPreset => p !== null);
+          setSaved(validated);
         }
       }
     } catch (e) {
       console.error("Failed to load saved presets:", e);
     }
-    return [];
-  });
-  const [theme, setTheme] = useState("light");
-  const [activeTab, setActiveTab] = useState("Gradient"); // 'Gradient' | 'mockups'
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  }, []);
 
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (tab === "mockups") {
       setIsSidebarCollapsed(true);
@@ -51,15 +59,15 @@ export default function GradientMaker() {
     }
   };
 
-  const [colorFormat, setColorFormat] = useState("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
-  const [activeStopId, setActiveStopId] = useState(DEFAULT_GRADIENT.stops[0].id);
-  const [isAppLoading, setIsAppLoading] = useState(true);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [presetToDelete, setPresetToDelete] = useState(null);
-  const [ratio, setRatio] = useState("fluid"); // 'fluid' | '1:1' | '4:5' | '16:9' | '9:16' | '19:6' | '6:19'
+  const [colorFormat, setColorFormat] = useState<string>("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
+  const [activeStopId, setActiveStopId] = useState<string>(DEFAULT_GRADIENT.stops[0].id);
+  const [isAppLoading, setIsAppLoading] = useState<boolean>(true);
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+  const [presetToDelete, setPresetToDelete] = useState<string | null>(null);
+  const [ratio, setRatio] = useState<string>("fluid"); // 'fluid' | '1:1' | '4:5' | '16:9' | '9:16' | '19:6' | '6:19'
   
-  const padRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const padRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const css = useMemo(() => buildGradientCSS(gradient), [gradient]);
 
@@ -101,18 +109,16 @@ export default function GradientMaker() {
       setIsAppLoading(false);
     }, 800);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [theme]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    document.documentElement.classList.toggle("light", next === "light");
   };
 
-  const update = (patch) => setGradient((g) => ({ ...g, ...patch }));
+  const update = (patch: Partial<GradientConfig>) => setGradient((g) => ({ ...g, ...patch }));
   
-  const updateStopById = (id, patch) => {
+  const updateStopById = (id: string, patch: Partial<ColorStop>) => {
     setGradient((g) => {
       const stops = g.stops.map((s) => (s.id === id ? { ...s, ...patch } : s));
       return { ...g, stops };
@@ -130,7 +136,7 @@ export default function GradientMaker() {
     });
   };
 
-  const removeStopById = (id) => {
+  const removeStopById = (id: string) => {
     setGradient((g) => {
       if (g.stops.length <= 2) return g;
       const filtered = g.stops.filter((s) => s.id !== id);
@@ -144,7 +150,7 @@ export default function GradientMaker() {
     }
   };
 
-  const selectPreset = (config) => {
+  const selectPreset = (config: GradientConfig) => {
     const stopsWithIds = config.stops.map((s, idx) => ({
       ...s,
       id: s.id || `preset_${idx}_${Date.now()}`
@@ -155,7 +161,7 @@ export default function GradientMaker() {
     }
   };
 
-  const onPadClick = (e) => {
+  const onPadClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!padRef.current) return;
     const rect = padRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -211,11 +217,11 @@ export default function GradientMaker() {
     }));
     const types = ["radial", "linear", "conic"];
     const nextGrad = {
-      type: types[Math.floor(Math.random() * types.length)],
+      type: types[Math.floor(Math.random() * types.length)] as "linear" | "radial" | "conic",
       angle: Math.floor(Math.random() * 360),
       pos_x: Math.floor(Math.random() * 100),
       pos_y: Math.floor(Math.random() * 100),
-      shape: "circle",
+      shape: "circle" as const,
       size: "farthest-corner",
       stops,
     };
@@ -258,7 +264,7 @@ export default function GradientMaker() {
     }
   };
 
-  const deletePreset = (id, e) => {
+  const deletePreset = (id: string, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     setPresetToDelete(id);
   };
@@ -295,14 +301,14 @@ export default function GradientMaker() {
     });
   };
 
-  const handleDrag = (stopId, e) => {
+  const handleDrag = (stopId: string, e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     const track = e.currentTarget.parentElement;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     
-    const moveHandler = (moveEvent) => {
-      const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX;
+    const moveHandler = (moveEvent: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
       const offsetX = clientX - rect.left;
       const pct = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
       
@@ -327,7 +333,7 @@ export default function GradientMaker() {
     window.addEventListener("touchend", upHandler);
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -347,7 +353,7 @@ export default function GradientMaker() {
         ctx.drawImage(img, 0, 0, 10, 10);
         const data = ctx.getImageData(0, 0, 10, 10).data;
 
-        const hexColors = [];
+        const hexColors: string[] = [];
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i+1];
@@ -360,7 +366,7 @@ export default function GradientMaker() {
           }
         }
 
-        const distinctColors = [];
+        const distinctColors: string[] = [];
         for (const col of hexColors) {
           const rgb1 = hexToRgb(col);
           const isTooClose = distinctColors.some(existing => {
@@ -405,7 +411,9 @@ export default function GradientMaker() {
 
         if (fileInputRef.current) fileInputRef.current.value = "";
       };
-      img.src = event.target.result;
+      if (event.target?.result) {
+        img.src = event.target.result as string;
+      }
     };
     reader.readAsDataURL(file);
   };

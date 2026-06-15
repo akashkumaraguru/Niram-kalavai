@@ -1,3 +1,17 @@
+"use client";
+
+import React from "react";
+import { GradientConfig } from "../lib/gradientUtils";
+
+interface ColorStopsSliderProps {
+  gradient: GradientConfig;
+  activeStopId: string;
+  setActiveStopId: (id: string) => void;
+  handleDrag: (stopId: string, e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
+  isExtracting: boolean;
+  sliderTrackBackground: string;
+}
+
 export default function ColorStopsSlider({
   gradient,
   activeStopId,
@@ -5,7 +19,7 @@ export default function ColorStopsSlider({
   handleDrag,
   isExtracting,
   sliderTrackBackground,
-}) {
+}: ColorStopsSliderProps) {
   if (isExtracting) {
     return (
       <div className="stops-slider-container">

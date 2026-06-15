@@ -1,10 +1,19 @@
+"use client";
+
+import React from "react";
 import { Upload } from "lucide-react";
+
+interface ImageColorExtractorProps {
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isExtracting: boolean;
+}
 
 export default function ImageColorExtractor({
   fileInputRef,
   handleImageUpload,
   isExtracting,
-}) {
+}: ImageColorExtractorProps) {
   return (
     <div>
       <div className="section-title">Extract from Image</div>

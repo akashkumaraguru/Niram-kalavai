@@ -1,6 +1,18 @@
+"use client";
+
 import { X } from "lucide-react";
 
-export default function DeleteConfirmModal({ presetName, onConfirm, onCancel }) {
+interface DeleteConfirmModalProps {
+  presetName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export default function DeleteConfirmModal({
+  presetName,
+  onConfirm,
+  onCancel,
+}: DeleteConfirmModalProps) {
   return (
     <div className="modal-overlay" onClick={onCancel} data-testid="delete-modal-overlay">
       <div className="modal-card" onClick={(e) => e.stopPropagation()} data-testid="delete-modal-card">

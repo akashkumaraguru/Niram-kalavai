@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
 import PresetSaveBox from "./PresetSaveBox";
 import ColorStopsSlider from "./ColorStopsSlider";
 import ColorStopsList from "./ColorStopsList";
@@ -6,13 +8,42 @@ import ImageColorExtractor from "./ImageColorExtractor";
 import CSSCodeConsole from "./CSSCodeConsole";
 import PresetGallery from "./PresetGallery";
 import { FlipHorizontal, RotateCw } from "lucide-react";
-import { PATTERNS } from "../lib/gradientUtils";
+import { PATTERNS, GradientConfig, ColorStop, GradientPreset } from "../lib/gradientUtils";
 
 const TYPES = [
   { id: "radial", label: "Radial" },
   { id: "linear", label: "Linear" },
   { id: "conic", label: "Conic" },
 ];
+
+interface ControlsSidebarProps {
+  gradient: GradientConfig;
+  update: (patch: Partial<GradientConfig>) => void;
+  activeStopId: string;
+  setActiveStopId: (id: string) => void;
+  updateStopById: (id: string, patch: Partial<ColorStop>) => void;
+  removeStopById: (id: string) => void;
+  addStop: () => void;
+  handleDrag: (stopId: string, e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
+  sliderTrackBackground: string;
+  isExtracting: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  name: string;
+  setName: (name: string) => void;
+  savePreset: () => void;
+  saved: GradientPreset[];
+  selectPreset: (config: GradientConfig) => void;
+  deletePreset: (id: string, e: React.MouseEvent<HTMLButtonElement>) => void;
+  cssFull: string;
+  colorFormat: string;
+  setColorFormat: (format: string) => void;
+  padRef: React.RefObject<HTMLDivElement | null>;
+  onPadClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  flipGradient: () => void;
+  rotateGradient: () => void;
+  activeTab: string;
+}
 
 export default function ControlsSidebar({
   gradient,
@@ -41,13 +72,13 @@ export default function ControlsSidebar({
   flipGradient,
   rotateGradient,
   activeTab,
-}) {
+}: ControlsSidebarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };
@@ -233,7 +264,7 @@ export default function ControlsSidebar({
                 <button
                   key={t.id}
                   className={gradient.type === t.id ? "active" : ""}
-                  onClick={() => update({ type: t.id })}
+                  onClick={() => update({ type: t.id as "linear" | "radial" | "conic" })}
                   data-testid={`type-${t.id}`}
                 >
                   {t.label}
@@ -250,7 +281,7 @@ export default function ControlsSidebar({
                 ref={padRef}
                 className="position-pad"
                 onClick={onPadClick}
-                style={{ "--px": `${gradient.pos_x}%`, "--py": `${gradient.pos_y}%` }}
+                style={{ "--px": `${gradient.pos_x}%`, "--py": `${gradient.pos_y}%` } as React.CSSProperties}
                 data-testid="position-pad"
               >
                 <div
@@ -343,7 +374,7 @@ export default function ControlsSidebar({
                     <button
                       key={s}
                       className={gradient.shape === s ? "active" : ""}
-                      onClick={() => update({ shape: s })}
+                      onClick={() => update({ shape: s as "circle" | "ellipse" })}
                       data-testid={`shape-${s}`}
                     >
                       {s}

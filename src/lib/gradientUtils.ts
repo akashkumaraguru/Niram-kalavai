@@ -1,5 +1,34 @@
 // Gradient utilities: build CSS strings and export to PNG via Gradient
-export const DEFAULT_GRADIENT = {
+
+export interface ColorStop {
+  id: string;
+  color: string;
+  position: number;
+  opacity?: number;
+}
+
+export interface GradientConfig {
+  type: "linear" | "radial" | "conic";
+  angle: number;
+  pos_x: number;
+  pos_y: number;
+  shape: "circle" | "ellipse";
+  size: string;
+  stops: ColorStop[];
+  chaos?: number;
+  grain?: number;
+  seed?: number;
+  blur?: number;
+  pattern?: string;
+}
+
+export interface GradientPreset {
+  id: string;
+  name: string;
+  config: GradientConfig;
+}
+
+export const DEFAULT_GRADIENT: GradientConfig = {
   type: "radial",
   angle: 135,
   pos_x: 50,
@@ -19,9 +48,9 @@ export const DEFAULT_GRADIENT = {
   pattern: "fine",
 };
 
-const sortStops = (stops) => [...stops].sort((a, b) => a.position - b.position);
+const sortStops = (stops: ColorStop[]): ColorStop[] => [...stops].sort((a, b) => a.position - b.position);
 
-export const getRGBAColor = (hex, opacityPercent) => {
+export const getRGBAColor = (hex: string, opacityPercent?: number): string => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
@@ -33,7 +62,7 @@ export const getRGBAColor = (hex, opacityPercent) => {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
-export const buildGradientCSS = (g) => {
+export const buildGradientCSS = (g: GradientConfig): string => {
   const stops = sortStops(g.stops)
     .map((s) => `${getRGBAColor(s.color, s.opacity ?? 100)} ${s.position.toFixed(1)}%`)
     .join(", ");
@@ -47,7 +76,7 @@ export const buildGradientCSS = (g) => {
   return `radial-gradient(${g.shape || "circle"} farthest-corner at ${g.pos_x}% ${g.pos_y}%, ${stops})`;
 };
 
-export const buildGradientSVG = (g) => {
+export const buildGradientSVG = (g: GradientConfig): string => {
   const stops = sortStops(g.stops);
   const stopTags = stops
     .map((s) => `<stop offset="${s.position}%" stop-color="${s.color}" stop-opacity="${((s.opacity ?? 100) / 100).toFixed(2)}" />`)
@@ -84,11 +113,12 @@ export const buildGradientSVG = (g) => {
 };
 
 // Export current gradient to a PNG by drawing on an offscreen Gradient
-export const exportGradientPNG = (g, width = 1920, height = 1080, filename = "gradient.png") => {
+export const exportGradientPNG = (g: GradientConfig, width = 1920, height = 1080, filename = "gradient.png"): void => {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
   const stops = sortStops(g.stops);
 
   if (g.type === "linear") {
@@ -141,6 +171,7 @@ export const exportGradientPNG = (g, width = 1920, height = 1080, filename = "gr
   }
 
   canvas.toBlob((blob) => {
+    if (!blob) return;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -152,7 +183,7 @@ export const exportGradientPNG = (g, width = 1920, height = 1080, filename = "gr
   }, "image/png");
 };
 
-export const PRESETS = [
+export const PRESETS: { name: string; config: GradientConfig }[] = [
   {
     "name": "Warm Flame",
     "config": {
@@ -5004,7 +5035,7 @@ export const PRESETS = [
 ];
 
 
-export const hexToRgb = (hexStr) => {
+export const hexToRgb = (hexStr: string): { r: number; g: number; b: number } => {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   const fullHex = hexStr.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
@@ -5015,11 +5046,11 @@ export const hexToRgb = (hexStr) => {
   } : { r: 0, g: 0, b: 0 };
 };
 
-export const randomHex = () => {
+export const randomHex = (): string => {
   return "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0").toUpperCase();
 };
 
-export const formatColor = (hex, opacity, format) => {
+export const formatColor = (hex: string, opacity: number | undefined, format: string): string => {
   const rgb = hexToRgb(hex);
   const alpha = opacity !== undefined ? opacity / 100 : 1;
   const isAlpha = alpha < 1;
@@ -5071,7 +5102,7 @@ export const formatColor = (hex, opacity, format) => {
 };
 
 // Validate and sanitize preset configurations loaded from external storage (localStorage)
-export const validateGradientPreset = (preset) => {
+export const validateGradientPreset = (preset: any): GradientPreset | null => {
   if (!preset || typeof preset !== "object") return null;
   if (typeof preset.id !== "string" || typeof preset.name !== "string") return null;
 
@@ -5086,7 +5117,7 @@ export const validateGradientPreset = (preset) => {
 
   if (!Array.isArray(config.stops) || config.stops.length < 2) return null;
 
-  const validatedStops = [];
+  const validatedStops: ColorStop[] = [];
   for (const stop of config.stops) {
     if (!stop || typeof stop !== "object") return null;
     const pos = Number(stop.position);
@@ -5110,11 +5141,11 @@ export const validateGradientPreset = (preset) => {
     id: preset.id,
     name: preset.name.replace(/[<>]/g, "").slice(0, 32).trim(), // Strip HTML tags and restrict size
     config: {
-      type: config.type,
+      type: config.type as "linear" | "radial" | "conic",
       angle: Math.max(0, Math.min(360, angle)),
       pos_x: Math.max(0, Math.min(100, posX)),
       pos_y: Math.max(0, Math.min(100, posY)),
-      shape: ["circle", "ellipse"].includes(config.shape) ? config.shape : "circle",
+      shape: ["circle", "ellipse"].includes(config.shape) ? (config.shape as "circle" | "ellipse") : "circle",
       size: config.size || "farthest-corner",
       stops: validatedStops,
       chaos: typeof config.chaos === "number" ? Math.max(0, Math.min(1, config.chaos)) : 0.5,
@@ -5126,7 +5157,14 @@ export const validateGradientPreset = (preset) => {
   };
 };
 
-export const PATTERNS = [
+export interface PatternConfig {
+  id: string;
+  label: string;
+  type: string;
+  frequency: number;
+}
+
+export const PATTERNS: PatternConfig[] = [
   { id: "fine", label: "Fine Grain", type: "fractalNoise", frequency: 0.75 },
   { id: "coarse", label: "Coarse Grain", type: "fractalNoise", frequency: 0.35 },
   { id: "sand", label: "Soft Sand", type: "fractalNoise", frequency: 0.5 },
@@ -5140,7 +5178,7 @@ export const PATTERNS = [
 ];
 
 // Generates a self-contained SVG for the noisy gradient
-export const buildNoisySVG = (g, ratio = "fluid") => {
+export const buildNoisySVG = (g: GradientConfig, ratio = "fluid"): string => {
   const stops = g.stops || [];
   const chaos = g.chaos ?? 0.5;
   const grain = g.grain ?? 0.3;
@@ -5151,7 +5189,7 @@ export const buildNoisySVG = (g, ratio = "fluid") => {
   const baseColor = stops[0]?.color || "#ffffff";
 
   // Deterministic pseudo-random number generator
-  const pseudoRandom = (s, index, offset) => {
+  const pseudoRandom = (s: number, index: number, offset: number): number => {
     const x = Math.sin(s * 13.1 + index * 37.7 + offset * 97.3) * 10000;
     return x - Math.floor(x);
   };
@@ -5179,7 +5217,14 @@ export const buildNoisySVG = (g, ratio = "fluid") => {
   }
 
   const blobCount = Math.max(6, stops.length * 2);
-  const blobs = [];
+  interface BlobObj {
+    cx: number;
+    cy: number;
+    r: number;
+    color: string;
+    opacity: number;
+  }
+  const blobs: BlobObj[] = [];
 
   for (let i = 0; i < blobCount; i++) {
     const stop = stops[i % stops.length];
@@ -5242,7 +5287,7 @@ export const buildNoisySVG = (g, ratio = "fluid") => {
 };
 
 // URL-encodes an SVG string for use as a background-image URI
-export const encodeSVGForCSS = (svgString) => {
+export const encodeSVGForCSS = (svgString: string): string => {
   return svgString
     .replace(/%/g, "%25")
     .replace(/#/g, "%23")
@@ -5254,11 +5299,12 @@ export const encodeSVGForCSS = (svgString) => {
 };
 
 // Renders the noisy gradient SVG to Canvas and saves as PNG
-export const exportNoisyGradientPNG = (svgString, width = 1920, height = 1080, filename = "noisy-gradient.png") => {
+export const exportNoisyGradientPNG = (svgString: string, width = 1920, height = 1080, filename = "noisy-gradient.png"): void => {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
+  if (!ctx) return;
 
   const img = new Image();
   const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
@@ -5267,6 +5313,7 @@ export const exportNoisyGradientPNG = (svgString, width = 1920, height = 1080, f
   img.onload = () => {
     ctx.drawImage(img, 0, 0, width, height);
     canvas.toBlob((blob) => {
+      if (!blob) return;
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;

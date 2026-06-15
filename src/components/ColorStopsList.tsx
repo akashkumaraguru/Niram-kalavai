@@ -1,5 +1,18 @@
+"use client";
+
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
+import { ColorStop, GradientConfig } from "../lib/gradientUtils";
+
+interface ColorStopsListProps {
+  gradient: GradientConfig;
+  activeStopId: string;
+  setActiveStopId: (id: string) => void;
+  updateStopById: (id: string, patch: Partial<ColorStop>) => void;
+  removeStopById: (id: string) => void;
+  addStop: () => void;
+  isExtracting: boolean;
+}
 
 export default function ColorStopsList({
   gradient,
@@ -9,7 +22,7 @@ export default function ColorStopsList({
   removeStopById,
   addStop,
   isExtracting,
-}) {
+}: ColorStopsListProps) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 12 }}>

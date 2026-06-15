@@ -1,4 +1,18 @@
-import logoIcon from "../assets/Logo.svg";
+"use client";
+
+import { GradientConfig } from "../lib/gradientUtils";
+
+interface PreviewAreaProps {
+  css: string;
+  noisySVG: string;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  ratio: string;
+  setRatio: (ratio: string) => void;
+  gradient: GradientConfig;
+  isSidebarCollapsed: boolean;
+  setIsSidebarCollapsed: (collapsed: boolean) => void;
+}
 
 export default function PreviewArea({
   css,
@@ -10,7 +24,7 @@ export default function PreviewArea({
   gradient,
   isSidebarCollapsed,
   setIsSidebarCollapsed,
-}) {
+}: PreviewAreaProps) {
   const getGradientStyle = () => {
     if (ratio === "fluid") {
       return { width: "100%", height: "100%", flex: 1 };
@@ -34,9 +48,9 @@ export default function PreviewArea({
   const getMockupTextStyle = () => {
     return {
       backgroundImage: css,
-      WebkitBackgroundClip: "text",
-      backgroundClip: "text",
-      WebkitTextFillColor: "transparent",
+      WebkitBackgroundClip: "text" as const,
+      backgroundClip: "text" as const,
+      WebkitTextFillColor: "transparent" as const,
       color: "transparent",
     };
   };
@@ -46,8 +60,8 @@ export default function PreviewArea({
       width: "44px",
       height: "44px",
       display: "block",
-      maskImage: `url(${logoIcon})`,
-      WebkitMaskImage: `url(${logoIcon})`,
+      maskImage: "url(/Logo.svg)",
+      WebkitMaskImage: "url(/Logo.svg)",
       maskSize: "contain",
       WebkitMaskSize: "contain",
       maskRepeat: "no-repeat",
@@ -158,7 +172,7 @@ export default function PreviewArea({
               <div className="mockup-logo-panel dark">
                 <div className="logo-box">
                   <div className="brand-logo-emblem" style={getMockupBackground()}>
-                    <img src={logoIcon} alt="Logo" className="brand-logo-mockup-white" />
+                    <img src="/Logo.svg" alt="Logo" className="brand-logo-mockup-white" />
                   </div>
                   <span className="logo-text">niram</span>
                 </div>
@@ -318,5 +332,3 @@ export default function PreviewArea({
     </main>
   );
 }
-
-

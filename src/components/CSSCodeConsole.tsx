@@ -1,8 +1,16 @@
+"use client";
+
+interface CSSCodeConsoleProps {
+  cssFull: string;
+  colorFormat: string;
+  setColorFormat: (format: string) => void;
+}
+
 export default function CSSCodeConsole({
   cssFull,
   colorFormat,
   setColorFormat,
-}) {
+}: CSSCodeConsoleProps) {
   return (
     <div>
       <div className="section-title">Generated CSS</div>

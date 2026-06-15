@@ -1,11 +1,20 @@
+"use client";
+
+import React from "react";
 import { Trash2 } from "lucide-react";
-import { PRESETS, buildGradientCSS } from "../lib/gradientUtils";
+import { PRESETS, buildGradientCSS, GradientConfig, GradientPreset } from "../lib/gradientUtils";
+
+interface PresetGalleryProps {
+  saved: GradientPreset[];
+  selectPreset: (config: GradientConfig) => void;
+  deletePreset: (id: string, e: React.MouseEvent<HTMLButtonElement>) => void;
+}
 
 export default function PresetGallery({
   saved,
   selectPreset,
   deletePreset,
-}) {
+}: PresetGalleryProps) {
   return (
     <div>
       {/* Curated Presets */}
