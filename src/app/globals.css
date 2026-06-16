@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&family=Playfair+Display:wght@400;600;700;900&family=Lora:wght@400;500;600;700&family=Merriweather:wght@300;400;700&family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -110,13 +110,23 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
   background-blend-mode: normal;
 }
 
+/* ── Tablet: 640–960px ─────────────────────────── */
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
-    grid-template-rows: 56px 50vh 1fr;
+    grid-template-rows: 56px 1fr auto;
+    height: auto;
+    min-height: 100vh;
     overflow-y: auto;
   }
-  body { overflow: auto; }
+  body { overflow-y: auto; }
+}
+
+/* ── Mobile: < 640px ───────────────────────────── */
+@media (max-width: 640px) {
+  .app-shell {
+    grid-template-rows: 52px 1fr auto;
+  }
 }
 
 /* Sidebar Collapsed Styles */
@@ -132,6 +142,7 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
     grid-template-rows: 56px 1fr;
   }
 }
+
 
 .topbar {
   grid-column: 1 / -1;
@@ -2111,6 +2122,168 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
 }
 
 
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — Mobile & Tablet
+   ═══════════════════════════════════════════════════════ */
 
+/* ── Shared: ≤ 960px (Tablet + Mobile) ────────────────── */
+@media (max-width: 960px) {
 
+  /* Topbar: tighter horizontal padding */
+  .topbar {
+    padding: 0 14px;
+    gap: 8px;
+  }
+
+  /* Sidebar: no fixed height, natural scroll */
+  .controls {
+    border-left: none;
+    border-top: 1px solid hsl(var(--border));
+    padding: 16px 14px 60px;
+    overflow-y: visible;
+  }
+
+  /* Preview area: allow natural height */
+  .preview-area {
+    padding: 16px;
+    min-height: 50vh;
+  }
+
+  /* Topbar studio switcher: smaller pills */
+  .topbar .btn-pill,
+  .topbar button[class*="rounded-full"] {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* btn-pill labels: hide on small topbar */
+  .topbar .btn-text {
+    display: none;
+  }
+}
+
+/* ── Tablet: 641–960px ─────────────────────────────────── */
+@media (min-width: 641px) and (max-width: 960px) {
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 24px;
+    align-items: start;
+  }
+  /* Section titles span full width */
+  .controls .section-title {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── Mobile: ≤ 640px ───────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Topbar */
+  .topbar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  /* Brand: hide text, show only logo */
+  .brand span {
+    display: none;
+  }
+
+  /* Studio switcher pills: icon only */
+  .topbar button span {
+    display: none;
+  }
+
+  /* Preview area: minimal padding */
+  .preview-area {
+    padding: 10px;
+    min-height: 40vh;
+  }
+
+  /* Controls */
+  .controls {
+    padding: 12px 10px 48px;
+  }
+
+  /* Palette preview tab buttons */
+  .preview-tab-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  /* Export modal: full-screen on mobile */
+  .fixed.inset-0 > div[class*="max-w-2xl"] {
+    max-width: 100% !important;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 92vh;
+  }
+
+  /* Mockup hero: smaller on mobile */
+  .mockup-hero {
+    padding: 28px 16px;
+  }
+  .mockup-hero h1 { font-size: 22px; }
+  .mockup-hero p { font-size: 13px; }
+  .mockup-hero-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Mockup overlays: single column */
+  .mockup-overlays-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  /* Mockup typography */
+  .mockup-gradient-text {
+    font-size: 32px;
+  }
+
+  /* Slider rows */
+  .slider-row {
+    grid-template-columns: 60px 1fr 44px;
+    gap: 6px;
+  }
+
+  /* Field rows */
+  .field-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* ── Extra-small Mobile: ≤ 400px ───────────────────────── */
+@media (max-width: 400px) {
+  .topbar {
+    padding: 0 8px;
+  }
+
+  /* Topbar: collapse studio text, keep icons */
+  .topbar button[class*="rounded-full"] span {
+    display: none;
+  }
+
+  /* Preview tabs: icon-only */
+  .preview-tab-btn span {
+    display: none;
+  }
+  .preview-tab-btn {
+    padding: 6px 10px;
+  }
+
+  /* ExportModal tabs: abbreviated text */
+  .fixed.inset-0 > div button[class*="flex-1"] {
+    font-size: 9px;
+    padding: 6px 2px;
+    letter-spacing: 0;
+  }
+}
 

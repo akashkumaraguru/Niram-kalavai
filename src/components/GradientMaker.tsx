@@ -24,11 +24,22 @@ import DeleteConfirmModal from "./DeleteConfirmModal";
 import Header from "./Header";
 import PreviewArea from "./PreviewArea";
 
-export default function GradientMaker() {
+interface GradientMakerProps {
+  theme: string;
+  toggleTheme: () => void;
+  activeStudio: "gradient" | "palette";
+  onChangeStudio: (studio: "gradient" | "palette") => void;
+}
+
+export default function GradientMaker({
+  theme,
+  toggleTheme,
+  activeStudio,
+  onChangeStudio,
+}: GradientMakerProps) {
   const [gradient, setGradient] = useState<GradientConfig>(DEFAULT_GRADIENT);
   const [name, setName] = useState<string>("");
   const [saved, setSaved] = useState<GradientPreset[]>([]);
-  const [theme, setTheme] = useState<string>("light");
   const [activeTab, setActiveTab] = useState<string>("Gradient"); // 'Gradient' | 'mockups'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
@@ -110,11 +121,6 @@ export default function GradientMaker() {
     }, 800);
     return () => clearTimeout(timer);
   }, [theme]);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-  };
 
   const update = (patch: Partial<GradientConfig>) => setGradient((g) => ({ ...g, ...patch }));
   
@@ -427,6 +433,8 @@ export default function GradientMaker() {
       <Header
         theme={theme}
         toggleTheme={toggleTheme}
+        activeStudio={activeStudio}
+        onChangeStudio={onChangeStudio}
         randomize={randomize}
         copyCSS={copyCSS}
         copySVG={copySVG}
