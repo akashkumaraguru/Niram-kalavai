@@ -424,7 +424,7 @@ interface PalettePreviewAreaProps {
 }
 
 type PreviewTab = "shades" | "mockups";
-type MockupType = "web" | "dashboard" | "components" | "mobile" | "gradients";
+type MockupType = "components" | "web" | "dashboard" | "mobile" | "gradients";
 
 export default function PalettePreviewArea({
   currentPalette,
@@ -435,7 +435,7 @@ export default function PalettePreviewArea({
   onExportAllScales,
 }: PalettePreviewAreaProps) {
   const [activeTab, setActiveTab] = useState<PreviewTab>("shades");
-  const [mockupMode, setMockupMode] = useState<MockupType>("web");
+  const [mockupMode, setMockupMode] = useState<MockupType>("components");
   const [previewDark, setPreviewDark] = useState<boolean>(false);
   const [selectedMaterialColor, setSelectedMaterialColor] = useState<string>("Blue");
   const [isA11yModalOpen, setIsA11yModalOpen] = useState<boolean>(false);
@@ -807,7 +807,7 @@ export default function PalettePreviewArea({
           <div key="mockups" className="max-w-4xl mx-auto space-y-6 animate-fade-in">
             {/* Mockups Submenu using Niram Kalavai ratio-btn class */}
             <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {(["web", "dashboard", "components", "mobile", "gradients"] as MockupType[]).map(
+              {(["components", "web", "dashboard", "mobile", "gradients"] as MockupType[]).map(
                 (type) => (
                   <button
                     key={type}
@@ -821,7 +821,7 @@ export default function PalettePreviewArea({
                       : type === "dashboard"
                       ? "Dashboard Charts"
                       : type === "components"
-                      ? "Shadcn/UI components"
+                      ? "Button components"
                       : type === "mobile"
                       ? "Mobile View"
                       : "Gradients Card"}
@@ -1141,116 +1141,125 @@ export default function PalettePreviewArea({
                 )}
 
                 {mockupMode === "components" && (
-                  <div className="space-y-6 animate-fade-in">
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                      Shadcn / Tailwind Components Sim
-                    </h4>
-                    <div className="grid grid-cols-2 gap-6">
-                      {/* Form inputs */}
-                      <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">
-                            Project Title
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Enter text..."
-                            defaultValue="Niram Kalavai Project"
-                            className={`w-full px-3 py-1.5 text-xs rounded-lg border focus:outline-none transition-colors ${
-                              previewDark
-                                ? "bg-slate-900 border-slate-800 text-white focus:border-accent"
-                                : "bg-white border-slate-200 text-slate-855 focus:border-accent"
-                            }`}
-                          />
-                        </div>
+                  <div className="space-y-5 animate-fade-in text-left">
+                    <h5 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider pl-0.5">
+                      Interactive Component State Palettes
+                    </h5>
+                    <div className="space-y-6">
+                        {[
+                          { name: "Primary", shades: currentPalette.shades },
+                          { name: "Secondary", shades: currentPalette.secondary || [] },
+                          { name: "Neutral", shades: currentPalette.neutrals },
+                          { name: "Success", shades: currentPalette.success },
+                          { name: "Warning", shades: currentPalette.warning },
+                          { name: "Error", shades: currentPalette.error },
+                        ].map((scale) => {
+                          const list = scale.shades || [];
+                          if (list.length === 0) return null;
 
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-muted-foreground uppercase">
-                            Status Mode
-                          </label>
-                          <select
-                            className={`w-full px-3 py-1.5 text-xs rounded-lg border focus:outline-none transition-colors ${
-                              previewDark
-                                ? "bg-slate-900 border-slate-800 text-white focus:border-accent"
-                                : "bg-white border-slate-200 text-slate-855 focus:border-accent"
-                            }`}
-                          >
-                            <option>Production Ready</option>
-                            <option>Staging</option>
-                            <option>Development</option>
-                          </select>
-                        </div>
-                      </div>
+                          // Helper to find specific shades or fallbacks safely
+                          const getShade = (level: string, indexFallback: number) => {
+                            return list.find(s => s.level === level) || list[indexFallback] || list[0];
+                          };
 
-                      {/* Interactive Buttons & Status Indicators */}
-                      <div className="space-y-4">
-                        <label className="text-[10px] font-bold text-muted-foreground uppercase block">
-                          Buttons States
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-transform active:scale-95 cursor-pointer"
-                            style={{
-                              backgroundColor: currentPalette.shades[5].hex,
-                              color: currentPalette.shades[0].hex,
-                            }}
-                          >
-                            Primary
-                          </button>
-                          <button
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold border transition-transform active:scale-95 cursor-pointer"
-                            style={{
-                              borderColor: currentPalette.shades[4].hex,
-                              color: currentPalette.shades[6].hex,
-                              backgroundColor: `${currentPalette.shades[1].hex}22`,
-                            }}
-                          >
-                            Outline
-                          </button>
-                          <button
-                            className="px-3 py-1.5 rounded-lg text-xs font-bold transition-transform active:scale-95 cursor-pointer"
-                            style={{
-                              backgroundColor: currentPalette.error[5].hex,
-                              color: currentPalette.error[0].hex,
-                            }}
-                          >
-                            Destructive
-                          </button>
-                        </div>
+                          const defaultShade = getShade("500", 5);
+                          const hoverShade = getShade("600", 6);
+                          const pressedShade = getShade("700", 7);
+                          const activeShade = getShade("500", 5);
+                          const disabledShade = getShade("200", 2);
+                          const disabledTextShade = getShade("400", 4);
 
-                        <label className="text-[10px] font-bold text-muted-foreground uppercase block pt-1">
-                          Dynamic Alerts
-                        </label>
-                        <div className="space-y-2">
-                          {/* Success Alert */}
-                          <div
-                            className="p-2.5 rounded-lg border-l-2 text-xs font-semibold flex gap-2 items-center"
-                            style={{
-                              backgroundColor: `${currentPalette.success[0].hex}22`,
-                              borderColor: currentPalette.success[5].hex,
-                              color: currentPalette.success[9].hex,
-                            }}
-                          >
-                            <CheckCircle2 size={13} />
-                            <span>Database backup completed successfully.</span>
-                          </div>
+                          // Standard text contrast helper
+                          const getTextColor = (shadeLvl: string) => {
+                            const lvl = parseInt(shadeLvl, 10);
+                            if (isNaN(lvl)) return "#ffffff";
+                            if (lvl <= 400) {
+                              return currentPalette.neutrals[10]?.hex || "rgba(15, 23, 42, 0.85)";
+                            }
+                            return currentPalette.neutrals[0]?.hex || "#ffffff";
+                          };
 
-                          {/* Error Alert */}
-                          <div
-                            className="p-2.5 rounded-lg border-l-2 text-xs font-semibold flex gap-2 items-center"
-                            style={{
-                              backgroundColor: `${currentPalette.error[0].hex}22`,
-                              borderColor: currentPalette.error[5].hex,
-                              color: currentPalette.error[9].hex,
-                            }}
-                          >
-                            <XCircle size={13} />
-                            <span>Failed to parse auth cookies config token.</span>
-                          </div>
-                        </div>
+                          const defaultTextColor = getTextColor(defaultShade.level);
+                          const hoverTextColor = getTextColor(hoverShade.level);
+                          const pressedTextColor = getTextColor(pressedShade.level);
+                          const activeTextColor = getTextColor(activeShade.level);
+                          const disabledTextColor = disabledTextShade.hex;
+
+                          const states = [
+                            { 
+                              name: "Default", 
+                              bg: defaultShade.hex, 
+                              text: defaultTextColor, 
+                              level: defaultShade.level,
+                              className: "active:scale-95"
+                            },
+                            { 
+                              name: "Hover", 
+                              bg: hoverShade.hex, 
+                              text: hoverTextColor, 
+                              level: hoverShade.level,
+                              className: "brightness-105 active:scale-95 shadow-sm"
+                            },
+                            { 
+                              name: "Pressed", 
+                              bg: pressedShade.hex, 
+                              text: pressedTextColor, 
+                              level: pressedShade.level,
+                              className: "brightness-90 scale-[0.98] shadow-inner"
+                            },
+                            { 
+                              name: "Active", 
+                              bg: activeShade.hex, 
+                              text: activeTextColor, 
+                              level: activeShade.level,
+                              className: "active:scale-95"
+                            },
+                            { 
+                              name: "Disabled", 
+                              bg: disabledShade.hex, 
+                              text: disabledTextColor, 
+                              level: disabledShade.level,
+                              className: "opacity-60 cursor-not-allowed" 
+                            },
+                          ];
+
+                          return (
+                            <div key={scale.name} className="space-y-2 text-left">
+                              <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider pl-0.5">
+                                {scale.name} Scale
+                              </div>
+                              <div className="grid grid-cols-5 gap-3 overflow-x-auto py-2 px-1.5 scrollbar-none min-w-max">
+                                {states.map((st) => (
+                                  <div key={st.name} className="flex flex-col gap-1 flex-1 min-w-[95px]">
+                                    <button
+                                      disabled={st.name === "Disabled"}
+                                      className={`px-2 py-2 rounded-lg text-[10px] font-bold text-center transition-all cursor-pointer ${st.className}`}
+                                      style={{
+                                        backgroundColor: st.bg,
+                                        color: st.text,
+                                        boxShadow: st.name === "Active" 
+                                          ? `0 0 0 2px ${previewDark ? '#020617' : '#ffffff'}, 0 0 0 4px ${st.bg}` 
+                                          : undefined
+                                      }}
+                                    >
+                                      {st.name}
+                                    </button>
+                                    <div className="text-center font-mono leading-tight">
+                                      <div className={`text-[9px] font-semibold ${previewDark ? "text-slate-400" : "text-slate-600"}`}>
+                                        {st.bg.toUpperCase()}
+                                      </div>
+                                      <div className={`text-[8px] ${previewDark ? "text-slate-500" : "text-slate-400"}`}>
+                                        Level {st.level}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  </div>
                 )}
 
                 {mockupMode === "mobile" && (
