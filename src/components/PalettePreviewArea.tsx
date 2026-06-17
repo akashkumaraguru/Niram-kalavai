@@ -441,23 +441,20 @@ export default function PalettePreviewArea({
   const [isA11yModalOpen, setIsA11yModalOpen] = useState<boolean>(false);
   const pillsRef = useRef<HTMLDivElement>(null);
 
-  // On mount: nudge right so user sees the peek fade and knows it scrolls
+  // Scroll selected pill into view (inside pills container only — never scrolls the page)
   useEffect(() => {
-    const el = pillsRef.current;
-    if (!el) return;
-    const timer = setTimeout(() => {
-      el.scrollTo({ left: 80, behavior: "smooth" });
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Scroll selected pill into view whenever selection changes
-  useEffect(() => {
-    const el = pillsRef.current;
-    if (!el) return;
-    const activeBtn = el.querySelector<HTMLButtonElement>(`[data-color="${selectedMaterialColor}"]`);
-    if (activeBtn) {
-      activeBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+    const container = pillsRef.current;
+    if (!container) return;
+    const activeBtn = container.querySelector<HTMLButtonElement>(`[data-color="${selectedMaterialColor}"]`);
+    if (!activeBtn) return;
+    const btnLeft   = activeBtn.offsetLeft;
+    const btnRight  = btnLeft + activeBtn.offsetWidth;
+    const visLeft   = container.scrollLeft;
+    const visRight  = visLeft + container.clientWidth;
+    if (btnLeft < visLeft) {
+      container.scrollTo({ left: btnLeft - 8, behavior: "smooth" });
+    } else if (btnRight > visRight) {
+      container.scrollTo({ left: btnRight - container.clientWidth + 8, behavior: "smooth" });
     }
   }, [selectedMaterialColor]);
   
@@ -536,7 +533,7 @@ export default function PalettePreviewArea({
             )}
           </div>
         </div>
-        <div className="grid gap-1 sm:gap-1.5 overflow-x-auto" style={{ gridTemplateColumns: `repeat(${shades.length}, minmax(20px, 1fr))` }}>
+        <div className="grid gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none py-1.5" style={{ gridTemplateColumns: `repeat(${shades.length}, minmax(20px, 1fr))` }}>
           {shades.map((sh) => {
             const isSelected = isActiveSection && selectedShadeInfo.level === sh.level;
             return (
@@ -550,12 +547,12 @@ export default function PalettePreviewArea({
                     }
                   }}
                   className={`group relative aspect-[1.1/1] rounded-xl overflow-hidden shadow-sm border transition-all duration-200 active:scale-95 cursor-pointer ${
-                    isSelected ? "ring-2 ring-accent scale-102 border-accent" : "border-border/30"
+                    isSelected ? "ring-2 ring-accent scale-102 border-accent" : "border-border/30 hover:scale-105 hover:shadow-md"
                   }`}
                   style={{ backgroundColor: sh.hex }}
                   title={`${sh.hex} - Level ${sh.level}`}
                 >
-                  {/* Hover indicator */}
+                  {/* Copy icon overlay */}
                   <span
                     className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                   >
@@ -702,7 +699,7 @@ export default function PalettePreviewArea({
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-5 sm:space-y-8">
         {activeTab === "shades" && (
-          <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
+          <div key="shades" className="max-w-4xl mx-auto space-y-4 sm:space-y-6 animate-fade-in">
             {/* Primary & Secondary Scale container */}
             <div className="bg-card/40 p-3 sm:p-5 rounded-2xl border border-border/80 space-y-4 sm:space-y-6">
               {renderShadeRow("Primary", currentPalette.shades)}
@@ -807,7 +804,7 @@ export default function PalettePreviewArea({
         )}
 
         {activeTab === "mockups" && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div key="mockups" className="max-w-4xl mx-auto space-y-6 animate-fade-in">
             {/* Mockups Submenu using Niram Kalavai ratio-btn class */}
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {(["web", "dashboard", "components", "mobile", "gradients"] as MockupType[]).map(
