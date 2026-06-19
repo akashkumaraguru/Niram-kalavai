@@ -20,6 +20,7 @@ export interface FullPalette {
   neutralType: string;
   neutrals: PaletteShade[];
   success: PaletteShade[];
+  info: PaletteShade[];
   warning: PaletteShade[];
   error: PaletteShade[];
   harmonyMode: string;
@@ -28,6 +29,7 @@ export interface FullPalette {
   lockedShades: string[]; // e.g. ["500"]
   neutralColor?: string;
   successColor?: string;
+  infoColor?: string;
   warningColor?: string;
   errorColor?: string;
 }
@@ -306,10 +308,11 @@ export const generateTailwindConfig = (
   secondary: PaletteShade[],
   neutrals: PaletteShade[],
   success: PaletteShade[],
+  info: PaletteShade[],
   warning: PaletteShade[],
   error: PaletteShade[]
 ): string => {
-  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !warning?.length && !error?.length;
+  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !info?.length && !warning?.length && !error?.length;
 
   const buildTWConfig = (list: PaletteShade[], indent = "        ") => {
     return list.map((s) => {
@@ -352,6 +355,9 @@ ${buildTWConfig(neutrals)}
         "success": {
 ${buildTWConfig(success)}
         },
+        "info": {
+${buildTWConfig(info)}
+        },
         "warning": {
 ${buildTWConfig(warning)}
         },
@@ -369,11 +375,12 @@ export const generateCSSVariables = (
   secondary: PaletteShade[],
   neutrals: PaletteShade[],
   success: PaletteShade[],
+  info: PaletteShade[],
   warning: PaletteShade[],
   error: PaletteShade[],
   paletteName?: string
 ): string => {
-  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !warning?.length && !error?.length;
+  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !info?.length && !warning?.length && !error?.length;
 
   const buildCSSVars = (list: PaletteShade[], prefix: string) => {
     return list.map((s) => {
@@ -403,6 +410,9 @@ ${buildCSSVars(neutrals, "neutral")}
   /* Success Scale */
 ${buildCSSVars(success, "success")}
 
+  /* Info Scale */
+${buildCSSVars(info, "info")}
+
   /* Warning Scale */
 ${buildCSSVars(warning, "warning")}
 
@@ -416,11 +426,12 @@ export const generateJSONTokens = (
   secondary: PaletteShade[],
   neutrals: PaletteShade[],
   success: PaletteShade[],
+  info: PaletteShade[],
   warning: PaletteShade[],
   error: PaletteShade[],
   paletteName?: string
 ): string => {
-  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !warning?.length && !error?.length;
+  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !info?.length && !warning?.length && !error?.length;
 
   const getShadesObj = (list: PaletteShade[]) => {
     const obj: Record<string, string> = {};
@@ -444,6 +455,7 @@ export const generateJSONTokens = (
     secondary: getShadesObj(secondary),
     neutral: getShadesObj(neutrals),
     success: getShadesObj(success),
+    info: getShadesObj(info),
     warning: getShadesObj(warning),
     error: getShadesObj(error)
   };
@@ -456,11 +468,12 @@ export const generateFigmaTokens = (
   secondary: PaletteShade[],
   neutrals: PaletteShade[],
   success: PaletteShade[],
+  info: PaletteShade[],
   warning: PaletteShade[],
   error: PaletteShade[],
   paletteName?: string
 ): string => {
-  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !warning?.length && !error?.length;
+  const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !info?.length && !warning?.length && !error?.length;
 
   const buildGroup = (list: PaletteShade[], rampName: string) => {
     const group: Record<string, any> = {};
@@ -509,6 +522,7 @@ export const generateFigmaTokens = (
       "Secondary": buildGroup(secondary, "secondary"),
       "Neutral": buildGroup(neutrals, "neutral"),
       "Success": buildGroup(success, "success"),
+      "Info": buildGroup(info, "info"),
       "Warning": buildGroup(warning, "warning"),
       "Error": buildGroup(error, "error")
     }

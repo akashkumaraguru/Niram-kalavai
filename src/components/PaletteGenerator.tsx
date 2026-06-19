@@ -32,6 +32,7 @@ export default function PaletteGenerator({
   const [secondaryColor, setSecondaryColor] = useState<string>("#8B5CF6");
   const [neutralColor, setNeutralColor] = useState<string>("#9E9E9E");
   const [successColor, setSuccessColor] = useState<string>("#4CAF50");
+  const [infoColor, setInfoColor] = useState<string>("#2196F3");
   const [warningColor, setWarningColor] = useState<string>("#FFEB3B");
   const [errorColor, setErrorColor] = useState<string>("#F44336");
   const [lightnessModifier, setLightnessModifier] = useState<number>(0);
@@ -51,6 +52,7 @@ export default function PaletteGenerator({
     secondary?: PaletteShade[];
     neutrals?: PaletteShade[];
     success?: PaletteShade[];
+    info?: PaletteShade[];
     warning?: PaletteShade[];
     error?: PaletteShade[];
   } | null>(null);
@@ -96,6 +98,14 @@ export default function PaletteGenerator({
           setSuccessColor(clean);
         }
       }
+      const infoParam = params.get("info");
+      if (infoParam) {
+        let clean = infoParam;
+        if (!clean.startsWith("#")) clean = "#" + clean;
+        if (/^#[0-9A-F]{6}$/i.test(clean)) {
+          setInfoColor(clean);
+        }
+      }
       const warningParam = params.get("warning");
       if (warningParam) {
         let clean = warningParam;
@@ -139,6 +149,18 @@ export default function PaletteGenerator({
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
         params.set("success", hex.replace("#", ""));
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.replaceState({}, "", newUrl);
+      }
+    }
+  };
+
+  const handleSetInfoColor = (hex: string) => {
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+      setInfoColor(hex);
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        params.set("info", hex.replace("#", ""));
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.replaceState({}, "", newUrl);
       }
@@ -210,6 +232,10 @@ export default function PaletteGenerator({
     return generateShades(successColor);
   }, [successColor]);
 
+  const infoShades = useMemo(() => {
+    return generateShades(infoColor);
+  }, [infoColor]);
+
   const warningShades = useMemo(() => {
     return generateShades(warningColor);
   }, [warningColor]);
@@ -235,6 +261,7 @@ export default function PaletteGenerator({
       neutralType,
       neutrals: neutralShades,
       success: successShades,
+      info: infoShades,
       warning: warningShades,
       error: errorShades,
       harmonyMode,
@@ -244,6 +271,7 @@ export default function PaletteGenerator({
       // Extra fields for custom status color inputs
       neutralColor,
       successColor,
+      infoColor,
       warningColor,
       errorColor,
     } as any;
@@ -256,6 +284,7 @@ export default function PaletteGenerator({
     neutralType,
     neutralShades,
     successShades,
+    infoShades,
     warningShades,
     errorShades,
     harmonyMode,
@@ -263,6 +292,7 @@ export default function PaletteGenerator({
     bodyFont,
     neutralColor,
     successColor,
+    infoColor,
     warningColor,
     errorColor,
   ]);
@@ -336,6 +366,7 @@ export default function PaletteGenerator({
     if (pal.secondaryColor) handleSetSecondaryColor(pal.secondaryColor);
     if (pal.neutralColor) handleSetNeutralColor(pal.neutralColor);
     if (pal.successColor) handleSetSuccessColor(pal.successColor);
+    if (pal.infoColor) handleSetInfoColor(pal.infoColor);
     if (pal.warningColor) handleSetWarningColor(pal.warningColor);
     if (pal.errorColor) handleSetErrorColor(pal.errorColor);
     
@@ -406,14 +437,21 @@ export default function PaletteGenerator({
     const successColor = chroma.hsl(succHue, succSat / 100, succLit / 100).hex().toUpperCase();
     handleSetSuccessColor(successColor);
 
-    // 5. Warning Color (Amber/Yellow/Orange variations)
+    // 5. Info Color (Blue/Sky variations)
+    const infoHue = 190 + Math.floor(Math.random() * 40); // 190 - 230 (Blue/Sky)
+    const infoSat = 60 + Math.floor(Math.random() * 25); // 60% - 85%
+    const infoLit = 44 + Math.floor(Math.random() * 12); // 44% - 56%
+    const infoColor = chroma.hsl(infoHue, infoSat / 100, infoLit / 100).hex().toUpperCase();
+    handleSetInfoColor(infoColor);
+
+    // 6. Warning Color (Amber/Yellow/Orange variations)
     const warnHue = 35 + Math.floor(Math.random() * 20); // 35 - 55 (Amber/Yellow-orange)
     const warnSat = 75 + Math.floor(Math.random() * 20); // 75% - 95%
     const warnLit = 46 + Math.floor(Math.random() * 10); // 46% - 56%
     const warningColor = chroma.hsl(warnHue, warnSat / 100, warnLit / 100).hex().toUpperCase();
     handleSetWarningColor(warningColor);
 
-    // 6. Error Color (Red/Crimson variations)
+    // 7. Error Color (Red/Crimson variations)
     const errHue = (Math.random() > 0.5 ? (350 + Math.floor(Math.random() * 15)) : Math.floor(Math.random() * 10)) % 360; // Red/Crimson
     const errSat = 65 + Math.floor(Math.random() * 20); // 65% - 85%
     const errLit = 44 + Math.floor(Math.random() * 10); // 44% - 54%
@@ -489,6 +527,7 @@ export default function PaletteGenerator({
           secondary: currentPalette.secondary || [],
           neutrals: currentPalette.neutrals,
           success: currentPalette.success,
+          info: currentPalette.info,
           warning: currentPalette.warning,
           error: currentPalette.error,
         })}
@@ -498,6 +537,7 @@ export default function PaletteGenerator({
           secondary: [],
           neutrals: [],
           success: [],
+          info: [],
           warning: [],
           error: [],
         })}
@@ -518,6 +558,8 @@ export default function PaletteGenerator({
         onChangeNeutralColor={handleSetNeutralColor}
         successColor={successColor}
         onChangeSuccessColor={handleSetSuccessColor}
+        infoColor={infoColor}
+        onChangeInfoColor={handleSetInfoColor}
         warningColor={warningColor}
         onChangeWarningColor={handleSetWarningColor}
         errorColor={errorColor}
@@ -549,6 +591,7 @@ export default function PaletteGenerator({
         secondary={exportPaletteData?.secondary || []}
         neutrals={exportPaletteData?.neutrals || []}
         success={exportPaletteData?.success || []}
+        info={exportPaletteData?.info || []}
         warning={exportPaletteData?.warning || []}
         error={exportPaletteData?.error || []}
       />
@@ -562,6 +605,7 @@ export default function PaletteGenerator({
         secondary={[]}
         neutrals={[]}
         success={[]}
+        info={[]}
         warning={[]}
         error={[]}
         scales={exportAllScalesData || undefined}

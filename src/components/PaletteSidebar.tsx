@@ -382,6 +382,8 @@ interface PaletteSidebarProps {
   onChangeNeutralColor: (hex: string) => void;
   successColor: string;
   onChangeSuccessColor: (hex: string) => void;
+  infoColor: string;
+  onChangeInfoColor: (hex: string) => void;
   warningColor: string;
   onChangeWarningColor: (hex: string) => void;
   errorColor: string;
@@ -413,6 +415,8 @@ export default function PaletteSidebar({
   onChangeNeutralColor,
   successColor,
   onChangeSuccessColor,
+  infoColor,
+  onChangeInfoColor,
   warningColor,
   onChangeWarningColor,
   errorColor,
@@ -706,6 +710,7 @@ export default function PaletteSidebar({
                 <ColorConfigRow label="Secondary Color" currentColor={secondaryColor} colorFormat={colorFormat} onChangeColor={onChangeSecondaryColor} />
                 <ColorConfigRow label="Neutral Color" currentColor={neutralColor} colorFormat={colorFormat} onChangeColor={onChangeNeutralColor} />
                 <ColorConfigRow label="Success Color" currentColor={successColor} colorFormat={colorFormat} onChangeColor={onChangeSuccessColor} />
+                <ColorConfigRow label="Info Color" currentColor={infoColor} colorFormat={colorFormat} onChangeColor={onChangeInfoColor} />
                 <ColorConfigRow label="Warning Color" currentColor={warningColor} colorFormat={colorFormat} onChangeColor={onChangeWarningColor} />
                 <ColorConfigRow label="Error Color" currentColor={errorColor} colorFormat={colorFormat} onChangeColor={onChangeErrorColor} />
               </div>

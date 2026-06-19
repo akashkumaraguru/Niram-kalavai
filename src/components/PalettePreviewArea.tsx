@@ -470,6 +470,7 @@ export default function PalettePreviewArea({
     else if (selectedShadeInfo.category === "Secondary") list = currentPalette.secondary || [];
     else if (selectedShadeInfo.category === "Neutral") list = currentPalette.neutrals;
     else if (selectedShadeInfo.category === "Success") list = currentPalette.success;
+    else if (selectedShadeInfo.category === "Info") list = currentPalette.info || [];
     else if (selectedShadeInfo.category === "Warning") list = currentPalette.warning;
     else if (selectedShadeInfo.category === "Error") list = currentPalette.error;
     else {
@@ -503,7 +504,7 @@ export default function PalettePreviewArea({
             {title} Scale
           </h4>
           <div className="flex items-center gap-2 flex-wrap">
-            {!["Primary", "Secondary", "Neutral", "Success", "Warning", "Error"].includes(cleanTitle) && (
+            {!["Primary", "Secondary", "Neutral", "Success", "Info", "Warning", "Error"].includes(cleanTitle) && (
               <div className="flex gap-2">
                 <button
                   onClick={() => {
@@ -710,6 +711,7 @@ export default function PalettePreviewArea({
             <div className="bg-card/40 p-3 sm:p-5 rounded-2xl border border-border/80 space-y-4 sm:space-y-6">
               {renderShadeRow("Neutral", currentPalette.neutrals)}
               {renderShadeRow("Success", currentPalette.success)}
+              {currentPalette.info && renderShadeRow("Info", currentPalette.info)}
               {renderShadeRow("Warning", currentPalette.warning)}
               {renderShadeRow("Error", currentPalette.error)}
             </div>
@@ -1151,6 +1153,7 @@ export default function PalettePreviewArea({
                           { name: "Secondary", shades: currentPalette.secondary || [] },
                           { name: "Neutral", shades: currentPalette.neutrals },
                           { name: "Success", shades: currentPalette.success },
+                          { name: "Info", shades: currentPalette.info || [] },
                           { name: "Warning", shades: currentPalette.warning },
                           { name: "Error", shades: currentPalette.error },
                         ].map((scale) => {

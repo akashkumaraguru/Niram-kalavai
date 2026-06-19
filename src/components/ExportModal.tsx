@@ -24,6 +24,7 @@ interface ExportModalProps {
   secondary: PaletteShade[];
   neutrals: PaletteShade[];
   success: PaletteShade[];
+  info: PaletteShade[];
   warning: PaletteShade[];
   error: PaletteShade[];
   /** When provided, the modal switches to multi-scale "Export All" mode */
@@ -40,6 +41,7 @@ export default function ExportModal({
   secondary,
   neutrals,
   success,
+  info,
   warning,
   error,
   scales,
@@ -62,10 +64,10 @@ export default function ExportModal({
       }
     }
     switch (activeTab) {
-      case "tailwind": return generateTailwindConfig(paletteName, shades, secondary, neutrals, success, warning, error);
-      case "css":      return generateCSSVariables(shades, secondary, neutrals, success, warning, error, paletteName);
-      case "json":     return generateJSONTokens(shades, secondary, neutrals, success, warning, error, paletteName);
-      case "figma":    return generateFigmaTokens(shades, secondary, neutrals, success, warning, error, paletteName);
+      case "tailwind": return generateTailwindConfig(paletteName, shades, secondary, neutrals, success, info, warning, error);
+      case "css":      return generateCSSVariables(shades, secondary, neutrals, success, info, warning, error, paletteName);
+      case "json":     return generateJSONTokens(shades, secondary, neutrals, success, info, warning, error, paletteName);
+      case "figma":    return generateFigmaTokens(shades, secondary, neutrals, success, info, warning, error, paletteName);
       default:         return "";
     }
   };
