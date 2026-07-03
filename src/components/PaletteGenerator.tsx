@@ -19,7 +19,7 @@ import {
 interface PaletteGeneratorProps {
   theme: string;
   toggleTheme: () => void;
-  onChangeStudio: (studio: "gradient" | "palette") => void;
+  onChangeStudio: (studio: "gradient" | "palette" | "typography") => void;
 }
 
 export default function PaletteGenerator({

@@ -27,8 +27,8 @@ import PreviewArea from "./PreviewArea";
 interface GradientMakerProps {
   theme: string;
   toggleTheme: () => void;
-  activeStudio: "gradient" | "palette";
-  onChangeStudio: (studio: "gradient" | "palette") => void;
+  activeStudio: "gradient" | "palette" | "typography";
+  onChangeStudio: (studio: "gradient" | "palette" | "typography") => void;
 }
 
 export default function GradientMaker({

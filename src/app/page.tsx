@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import GradientMaker from "@/components/GradientMaker";
 import PaletteGenerator from "@/components/PaletteGenerator";
+import TypographyGenerator from "@/components/TypographyGenerator";
 
 export default function Home() {
   const [theme, setTheme] = useState<string>("dark"); // Default to dark theme
-  const [activeStudio, setActiveStudio] = useState<"gradient" | "palette">("gradient");
+  const [activeStudio, setActiveStudio] = useState<"gradient" | "palette" | "typography">("gradient");
   const [mounted, setMounted] = useState<boolean>(false);
 
   // Sync theme and active sub-app tab on client mount
@@ -33,6 +34,8 @@ export default function Home() {
 
     if (studioParam === "palette" || colorParam) {
       setActiveStudio("palette");
+    } else if (studioParam === "typography") {
+      setActiveStudio("typography");
     } else if (studioParam === "gradient") {
       setActiveStudio("gradient");
     }
@@ -55,16 +58,22 @@ export default function Home() {
     setTheme((t) => (t === "dark" ? "light" : "dark"));
   };
 
-  const handleStudioChange = (studio: "gradient" | "palette") => {
+  const handleStudioChange = (studio: "gradient" | "palette" | "typography") => {
     setActiveStudio(studio);
     
     // Update URL query parameters silently
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       params.set("studio", studio);
-      // If switching to gradient, clean up palette color params to prevent layout conflicts on reload
-      if (studio === "gradient") {
+      // If switching to gradient or typography, clean up palette color params to prevent layout conflicts on reload
+      if (studio !== "palette") {
         params.delete("color");
+        params.delete("secondary");
+        params.delete("neutral");
+        params.delete("success");
+        params.delete("info");
+        params.delete("warning");
+        params.delete("error");
       }
       const newUrl = `${window.location.pathname}?${params.toString()}`;
       window.history.replaceState({}, "", newUrl);
@@ -89,8 +98,14 @@ export default function Home() {
           activeStudio={activeStudio}
           onChangeStudio={handleStudioChange}
         />
-      ) : (
+      ) : activeStudio === "palette" ? (
         <PaletteGenerator
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onChangeStudio={handleStudioChange}
+        />
+      ) : (
+        <TypographyGenerator
           theme={theme}
           toggleTheme={toggleTheme}
           onChangeStudio={handleStudioChange}

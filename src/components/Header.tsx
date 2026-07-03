@@ -1,12 +1,12 @@
 "use client";
 
-import { Code, Copy, FolderDown, ImageDown, Moon, Palette, Shuffle, Sparkles, Sun } from "lucide-react";
+import { Code, Copy, FolderDown, ImageDown, Moon, Palette, Shuffle, Sparkles, Sun, Type } from "lucide-react";
 
 interface HeaderProps {
   theme: string;
   toggleTheme: () => void;
-  activeStudio: "gradient" | "palette";
-  onChangeStudio: (studio: "gradient" | "palette") => void;
+  activeStudio: "gradient" | "palette" | "typography";
+  onChangeStudio: (studio: "gradient" | "palette" | "typography") => void;
 
   // Gradient Studio Actions
   randomize?: () => void;
@@ -17,6 +17,9 @@ interface HeaderProps {
   // Palette Studio Actions
   randomizePalette?: () => void;
   openExportPalette?: () => void;
+
+  // Typography Lab Actions
+  openExportTypography?: () => void;
 }
 
 export default function Header({
@@ -30,6 +33,7 @@ export default function Header({
   downloadPNG,
   randomizePalette,
   openExportPalette,
+  openExportTypography,
 }: HeaderProps) {
   return (
     <header className="topbar" data-testid="topbar">
@@ -62,6 +66,16 @@ export default function Header({
         >
           <Palette size={13} />
           <span>Palette Studio</span>
+        </button>
+        <button
+          onClick={() => onChangeStudio("typography")}
+          className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${activeStudio === "typography"
+              ? "bg-primary text-white border border-accent/15 shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
+            }`}
+        >
+          <Type size={13} />
+          <span>Typography Lab</span>
         </button>
       </div>
 
@@ -110,16 +124,8 @@ export default function Header({
               <span className="btn-text hidden md:inline">Download PNG</span>
             </button>
           </>
-        ) : (
+        ) : activeStudio === "palette" ? (
           <>
-            {/* <button
-              className="btn-pill ghost shrink-0"
-              onClick={randomizePalette}
-              title="Randomize primary base color"
-            >
-              <Shuffle size={14} />
-              <span className="btn-text hidden md:inline">Randomize</span>
-            </button> */}
             <button
               className="btn-pill primary shrink-0"
               onClick={openExportPalette}
@@ -129,7 +135,18 @@ export default function Header({
               <span className="btn-text hidden md:inline">Export Palette</span>
             </button>
           </>
-        )}
+        ) : activeStudio === "typography" ? (
+          <>
+            <button
+              className="btn-pill primary shrink-0"
+              onClick={openExportTypography}
+              title="Export typography configurations and tokens"
+            >
+              <FolderDown size={14} />
+              <span className="btn-text hidden md:inline">Export & Tokens</span>
+            </button>
+          </>
+        ) : null}
       </div>
     </header>
   );
