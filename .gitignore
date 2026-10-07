@@ -42,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local browser audit artifacts
+/.playwright-cli/
+/output/playwright/

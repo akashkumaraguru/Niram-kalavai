@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, Calendar, FileDown, Plus } from "lucide-react";
+import { Trash2, Calendar, FileDown } from "lucide-react";
 import { FullPalette } from "@/lib/paletteUtils";
 
 interface SavedPalettesProps {
@@ -37,6 +37,12 @@ export default function SavedPalettes({
               return (
                 <div
                   key={pal.name}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Load ${pal.name} palette`}
+                  onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSelect(pal); }
+                  }}
                   onClick={() => onSelect(pal)}
                   className={`group relative p-3 rounded-xl border transition-all cursor-pointer ${
                     isSelected
@@ -59,7 +65,7 @@ export default function SavedPalettes({
                         e.stopPropagation();
                         onDelete(pal.name);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive rounded transition-all hover:bg-input"
+                      className="opacity-100 p-1 text-muted-foreground hover:text-destructive rounded transition-all hover:bg-input"
                       title="Delete saved palette"
                     >
                       <Trash2 size={12} />

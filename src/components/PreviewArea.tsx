@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { GradientConfig } from "../lib/gradientUtils";
 
 interface PreviewAreaProps {
@@ -172,7 +174,7 @@ export default function PreviewArea({
               <div className="mockup-logo-panel dark">
                 <div className="logo-box">
                   <div className="brand-logo-emblem" style={getMockupBackground()}>
-                    <img src="/Logo.svg" alt="Logo" className="brand-logo-mockup-white" />
+                    <Image width={26} height={26} src="/Logo.svg" alt="Logo" className="brand-logo-mockup-white" />
                   </div>
                   <span className="logo-text">niram</span>
                 </div>

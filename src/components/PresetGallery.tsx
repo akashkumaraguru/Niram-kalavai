@@ -22,16 +22,18 @@ export default function PresetGallery({
         <div className="section-title">Curated Presets</div>
         <div className="curated-presets-scroll" data-testid="presets-curated">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {PRESETS.map((p, i) => (
-              <div
-                key={i}
+            {PRESETS.map((p) => (
+              <button
+                type="button"
+                aria-label={`Apply ${p.name} preset`}
+                key={p.name}
                 className="preset-card"
                 style={{ background: buildGradientCSS(p.config) }}
                 onClick={() => selectPreset(p.config)}
                 data-testid={`preset-${p.name.replace(/\s+/g, "-").toLowerCase()}`}
               >
-                <div className="preset-label">{p.name}</div>
-              </div>
+                <span className="preset-label">{p.name}</span>
+              </button>
             ))}
           </div>
         </div>
@@ -47,10 +49,11 @@ export default function PresetGallery({
                 key={p.id}
                 className="preset-card"
                 style={{ background: buildGradientCSS(p.config) }}
-                onClick={() => selectPreset(p.config)}
                 data-testid={`saved-preset-${p.id}`}
               >
-                <div className="preset-label">{p.name}</div>
+                <button type="button" className="preset-select" onClick={() => selectPreset(p.config)} aria-label={`Apply ${p.name} preset`}>
+                  <span className="preset-label">{p.name}</span>
+                </button>
                 <button
                   onClick={(e) => deletePreset(p.id, e)}
                   style={{
@@ -66,6 +69,7 @@ export default function PresetGallery({
                     display: "flex",
                   }}
                   data-testid={`saved-preset-delete-${p.id}`}
+                  aria-label={`Delete ${p.name} preset`}
                   title="Delete"
                 >
                   <Trash2 size={12} />

@@ -4,49 +4,28 @@ import React, { useState } from "react";
 import {
   Type,
   Layout,
-  Code,
   LineChart,
   Laptop,
   Tablet as TabletIcon,
   Smartphone,
-  Copy,
-  Download,
   Check,
   Undo2,
   Trash2,
-  Lock,
   Moon,
   Sun,
-  Eye,
-  Folder,
-  FileCode,
   Settings,
   Plus
 } from "lucide-react";
-import { toast } from "sonner";
 import {
   TypographySystem,
   TypographyStyle,
-  SCALES,
-  formatName,
-  exportAsJSON,
-  exportAsDesignTokens,
-  exportAsCSSVariables,
-  exportAsSCSS,
-  exportAsTailwindConfig,
-  exportAsReactTheme,
-  exportAsFlutterTheme,
-  exportAsAndroidXML,
-  exportAsIOSSwift,
-  exportAsFigmaVariables,
-  exportAsTokenStudio
+  responsiveFontSize,
 } from "@/lib/typographyUtils";
 
 interface TypographyPreviewAreaProps {
   system: TypographySystem;
   onChangeStyleOverride: (styleId: string, patch: Partial<TypographyStyle>) => void;
   onRemoveStyleOverride: (styleId: string) => void;
-  onResetAllOverrides: () => void;
   onAddStyle: () => void;
   onDeleteStyle: (styleId: string) => void;
   onChangeStyleName: (styleId: string, newName: string) => void;
@@ -56,24 +35,10 @@ interface TypographyPreviewAreaProps {
 type PreviewTab = "visualizer" | "styles" | "mockups";
 type MockupType = "website" | "dashboard" | "mobile" | "marketing";
 type DeviceView = "desktop" | "tablet" | "mobile";
-type ExportFormat =
-  | "json"
-  | "tokens"
-  | "css"
-  | "scss"
-  | "tailwind"
-  | "react"
-  | "flutter"
-  | "android"
-  | "ios"
-  | "figma"
-  | "tokenstudio";
-
 export default function TypographyPreviewArea({
   system,
   onChangeStyleOverride,
   onRemoveStyleOverride,
-  onResetAllOverrides,
   onAddStyle,
   onDeleteStyle,
   onChangeStyleName,
@@ -94,9 +59,9 @@ export default function TypographyPreviewArea({
     // Apply mobile scaling if responsiveScale is stepped/fluid and we are in mobile view
     if (isMobile) {
       if (system.responsiveScale === "stepped") {
-        size = Math.max(10, Math.round(size * 0.8));
+        size = Math.min(size, Math.max(10, Math.round(size * 0.8)));
       } else if (system.responsiveScale === "fluid") {
-        size = Math.max(10, Math.round(size * 0.85));
+        size = Math.min(size, Math.max(10, Math.round(size * 0.8)));
       }
     }
 
@@ -110,14 +75,8 @@ export default function TypographyPreviewArea({
   };
 
   // Resolve responsive styles for code preview (fluid)
-  const getResponsiveCSSForStyle = (style: TypographyStyle) => {
-    const minSize = Math.max(10, Math.round(style.sizePx * 0.8));
-    const maxSize = style.sizePx;
-    if (system.responsiveScale === "fluid") {
-      return `clamp(${minSize}px, calc(${minSize}px + 1.25vw), ${maxSize}px)`;
-    }
-    return `${maxSize}px`;
-  };
+  const getResponsiveCSSForStyle = (style: TypographyStyle | undefined) =>
+    responsiveFontSize(style?.sizePx ?? system.baseSize, system.responsiveScale);
 
   // Render scale visualizer chart
   const renderVisualizer = () => {
@@ -140,7 +99,7 @@ export default function TypographyPreviewArea({
           </div>
 
           <div className="space-y-4 pt-2">
-            {headingStyles.map((st, idx) => {
+            {headingStyles.map((st) => {
               const percentage = (st.sizePx / headingStyles[0].sizePx) * 100;
               return (
                 <div key={st.id} className="group flex items-center gap-4">
@@ -275,7 +234,11 @@ export default function TypographyPreviewArea({
               <div className="flex flex-wrap justify-between items-center gap-3 pb-3 border-b border-border/40">
                 <div className="flex items-center gap-2.5">
                   {/* Style Checkbox Indicator */}
-                  <div
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={Boolean(st.isOverridden)}
+                    aria-label={`Override ${st.name} style`}
                     onClick={() => {
                       if (st.isOverridden) {
                         onRemoveStyleOverride(st.id);
@@ -296,7 +259,7 @@ export default function TypographyPreviewArea({
                     }`}
                   >
                     {st.isOverridden && <Check size={11} strokeWidth={3} />}
-                  </div>
+                  </button>
                   <div className="flex items-center">
                     <input
                       type="text"
@@ -317,9 +280,10 @@ export default function TypographyPreviewArea({
                         <span className="text-muted-foreground">Size:</span>
                         <input
                           type="number"
+                          aria-label={`Font size for ${st.name}`}
                           value={st.sizePx}
                           min="1"
-                          max="200"
+                          max="100000"
                           onChange={(e) => onChangeStyleOverride(st.id, { sizePx: Number(e.target.value) })}
                           className="w-10 bg-transparent text-foreground border-none font-bold text-center outline-none shrink-0"
                         />
@@ -352,6 +316,7 @@ export default function TypographyPreviewArea({
                           step="0.05"
                           min="0.5"
                           max="3"
+                          aria-label={`Line height for ${st.name}`}
                           value={st.lineHeight}
                           onChange={(e) => onChangeStyleOverride(st.id, { lineHeight: Number(e.target.value) })}
                           className="w-12 bg-transparent text-foreground border-none font-bold text-center outline-none shrink-0"
@@ -366,6 +331,7 @@ export default function TypographyPreviewArea({
                           step="0.005"
                           min="-0.2"
                           max="0.5"
+                          aria-label={`Letter spacing for ${st.name}`}
                           value={st.letterSpacing}
                           onChange={(e) => onChangeStyleOverride(st.id, { letterSpacing: Number(e.target.value) })}
                           className="w-14 bg-transparent text-foreground border-none font-bold text-center outline-none shrink-0"
@@ -670,7 +636,7 @@ export default function TypographyPreviewArea({
                       </p>
                     </div>
                     <div className="bg-card p-4 rounded-xl border border-border/80 text-[10px] font-mono text-emerald-500 whitespace-nowrap overflow-x-auto w-full md:w-auto">
-                      font-size: {getResponsiveCSSForStyle(system.styles.find(s => s.id === "h1")!)}
+                      font-size: {getResponsiveCSSForStyle(system.styles.find(s => s.id === "h1"))}
                     </div>
                   </div>
                 </div>

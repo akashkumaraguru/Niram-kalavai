@@ -1,5 +1,6 @@
 "use client";
 
+import { useDialog } from "@/hooks/useDialog";
 import { X } from "lucide-react";
 
 interface DeleteConfirmModalProps {
@@ -13,15 +14,16 @@ export default function DeleteConfirmModal({
   onConfirm,
   onCancel,
 }: DeleteConfirmModalProps) {
+  const dialogRef = useDialog(true, onCancel);
   return (
     <div className="modal-overlay" onClick={onCancel} data-testid="delete-modal-overlay">
-      <div className="modal-card" onClick={(e) => e.stopPropagation()} data-testid="delete-modal-card">
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-preset-title" tabIndex={-1} className="modal-card" onClick={(e) => e.stopPropagation()} data-testid="delete-modal-card">
         <button className="modal-close-btn" onClick={onCancel} title="Close dialog" data-testid="btn-close-modal">
           <X size={16} />
         </button>
-        <h3 className="modal-title">Delete Preset</h3>
+        <h3 id="delete-preset-title" className="modal-title">Delete Preset</h3>
         <p className="modal-text">
-          Are you sure to delete <strong>"{presetName}"</strong>?
+          Are you sure to delete <strong>&quot;{presetName}&quot;</strong>?
         </p>
         <div className="modal-actions">
           <button className="btn-modal cancel" onClick={onCancel} data-testid="btn-cancel-delete">

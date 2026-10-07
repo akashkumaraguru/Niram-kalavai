@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { Moon, Sun } from "lucide-react";
 
 interface AppSkeletonProps {
@@ -12,7 +14,7 @@ export default function AppSkeleton({ theme, toggleTheme }: AppSkeletonProps) {
     <div className="app-shell skeleton-mode">
       <header className="topbar">
         <div className="brand">
-          <img src="/Logo.svg" alt="Niram Kalavai" className="brand-logo" />
+          <Image width={26} height={26} src="/Logo.svg" alt="Niram Kalavai" className="brand-logo" />
           <span>Niram<span style={{ color: "hsl(var(--accent))" }}> Kalavai</span></span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

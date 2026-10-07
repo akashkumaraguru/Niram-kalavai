@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { Code, Copy, FolderDown, ImageDown, Moon, Palette, Shuffle, Sparkles, Sun, Type } from "lucide-react";
 
 interface HeaderProps {
@@ -15,7 +17,6 @@ interface HeaderProps {
   downloadPNG?: () => void;
 
   // Palette Studio Actions
-  randomizePalette?: () => void;
   openExportPalette?: () => void;
 
   // Typography Lab Actions
@@ -31,7 +32,6 @@ export default function Header({
   copyCSS,
   copySVG,
   downloadPNG,
-  randomizePalette,
   openExportPalette,
   openExportTypography,
 }: HeaderProps) {
@@ -39,7 +39,7 @@ export default function Header({
     <header className="topbar" data-testid="topbar">
       {/* Brand logo & name */}
       <div className="brand shrink-0">
-        <img src="/Logo-desktop.svg" alt="Niram Kalavai" className="brand-logo" />
+        <Image width={26} height={26} src="/Logo-desktop.svg" alt="Niram Kalavai" className="brand-logo" />
         <span className="hidden sm:inline font-bold">
           Niram<span style={{ color: "hsl(var(--accent))" }}> Kalavai</span>
         </span>
@@ -48,6 +48,8 @@ export default function Header({
       {/* Central Studio Switcher Tabs */}
       <div className="flex p-1  border border-border rounded-full gap-1 shrink-0 font-sans">
         <button
+          aria-label="Gradient Maker"
+          aria-pressed={activeStudio === "gradient"}
           onClick={() => onChangeStudio("gradient")}
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${activeStudio === "gradient"
               ? "bg-primary text-white border border-accent/15 shadow-sm"
@@ -58,6 +60,8 @@ export default function Header({
           <span>Gradient Maker</span>
         </button>
         <button
+          aria-label="Palette Studio"
+          aria-pressed={activeStudio === "palette"}
           onClick={() => onChangeStudio("palette")}
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${activeStudio === "palette"
               ? "bg-primary text-white border border-accent/15 shadow-sm"
@@ -68,6 +72,8 @@ export default function Header({
           <span>Palette Studio</span>
         </button>
         <button
+          aria-label="Typography Lab"
+          aria-pressed={activeStudio === "typography"}
           onClick={() => onChangeStudio("typography")}
           className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${activeStudio === "typography"
               ? "bg-primary text-white border border-accent/15 shadow-sm"
@@ -93,6 +99,7 @@ export default function Header({
           <>
             <button
               className="btn-pill ghost shrink-0"
+              aria-label="Randomize gradient"
               onClick={randomize}
               data-testid="btn-randomize"
             >
@@ -101,6 +108,7 @@ export default function Header({
             </button>
             <button
               className="btn-pill shrink-0"
+              aria-label="Copy CSS"
               onClick={copyCSS}
               data-testid="btn-copy-css"
             >
@@ -117,6 +125,7 @@ export default function Header({
             </button>
             <button
               className="btn-pill primary shrink-0"
+              aria-label="Download PNG"
               onClick={downloadPNG}
               data-testid="btn-download-png"
             >

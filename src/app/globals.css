@@ -2300,3 +2300,9 @@ body, .app-shell, .topbar, .controls, .section-title, .btn-pill, .type-toggle, .
   }
 }
 
+
+/* Native preset buttons and keyboard-visible controls. */
+button.preset-card { padding: 0; text-align: left; }
+.preset-select { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.preset-card:focus-visible, .preset-select:focus-visible, .stop-handle-pin:focus-visible { outline: 2px solid hsl(var(--accent)); outline-offset: 3px; }
+.stop-handle-pin { touch-action: none; }

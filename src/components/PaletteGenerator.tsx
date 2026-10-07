@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import chroma from "chroma-js";
+import { readStoredList } from "@/lib/validation";
+import { validatePalette } from "@/lib/presetStorage";
 import PaletteSidebar from "./PaletteSidebar";
 import PalettePreviewArea from "./PalettePreviewArea";
 import ExportModal from "./ExportModal";
@@ -12,7 +14,6 @@ import {
   PaletteShade,
   NamedScale,
   generateShades,
-  generateNeutralScale,
   inferColorName,
 } from "@/lib/paletteUtils";
 
@@ -22,29 +23,40 @@ interface PaletteGeneratorProps {
   onChangeStudio: (studio: "gradient" | "palette" | "typography") => void;
 }
 
+function initialColor(key: string, fallback: string): string {
+  const value = new URLSearchParams(window.location.search).get(key)?.replace(/^#/, "");
+  return value && /^[a-f\d]{6}$/i.test(value) ? `#${value.toUpperCase()}` : fallback;
+}
+
+function updateColorURL(key: string, color: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set(key, color.replace("#", ""));
+  window.history.replaceState(window.history.state, "", url);
+}
+
 export default function PaletteGenerator({
   theme,
   toggleTheme,
   onChangeStudio,
 }: PaletteGeneratorProps) {
   // Base states
-  const [baseColor, setBaseColor] = useState<string>("#3B82F6");
-  const [secondaryColor, setSecondaryColor] = useState<string>("#8B5CF6");
-  const [neutralColor, setNeutralColor] = useState<string>("#9E9E9E");
-  const [successColor, setSuccessColor] = useState<string>("#4CAF50");
-  const [infoColor, setInfoColor] = useState<string>("#2196F3");
-  const [warningColor, setWarningColor] = useState<string>("#FFEB3B");
-  const [errorColor, setErrorColor] = useState<string>("#F44336");
+  const [baseColor, setBaseColor] = useState<string>(() => initialColor("color", "#3B82F6"));
+  const [secondaryColor, setSecondaryColor] = useState<string>(() => initialColor("secondary", "#8B5CF6"));
+  const [neutralColor, setNeutralColor] = useState<string>(() => initialColor("neutral", "#9E9E9E"));
+  const [successColor, setSuccessColor] = useState<string>(() => initialColor("success", "#4CAF50"));
+  const [infoColor, setInfoColor] = useState<string>(() => initialColor("info", "#2196F3"));
+  const [warningColor, setWarningColor] = useState<string>(() => initialColor("warning", "#FFEB3B"));
+  const [errorColor, setErrorColor] = useState<string>(() => initialColor("error", "#F44336"));
   const [lightnessModifier, setLightnessModifier] = useState<number>(0);
   const [saturationModifier, setSaturationModifier] = useState<number>(0);
   const [neutralType, setNeutralType] = useState<string>("zinc");
   const [harmonyMode, setHarmonyMode] = useState<string>("Complementary");
   const [headingFont, setHeadingFont] = useState<string>("Outfit");
   const [bodyFont, setBodyFont] = useState<string>("Inter");
-  const [fontsSynced, setFontsSynced] = useState<boolean>(true);
-  const [paletteName, setPaletteName] = useState<string>("Blue Ribbon");
+  const [fontsSynced, setFontsSynced] = useState<boolean>(false);
+  const [paletteName, setPaletteName] = useState<string>(() => inferColorName(baseColor));
   
-  const [savedPalettes, setSavedPalettes] = useState<FullPalette[]>([]);
+  const [savedPalettes, setSavedPalettes] = useState<FullPalette[]>(() => readStoredList("tailwind-palette-presets", validatePalette));
   const [paletteNameInput, setPaletteNameInput] = useState<string>("");
   const [exportPaletteData, setExportPaletteData] = useState<{
     name: string;
@@ -58,160 +70,53 @@ export default function PaletteGenerator({
   } | null>(null);
   const [exportAllScalesData, setExportAllScalesData] = useState<NamedScale[] | null>(null);
 
-  // Sync URL color on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const colorParam = params.get("color");
-      if (colorParam) {
-        let cleanColor = colorParam;
-        if (!cleanColor.startsWith("#")) {
-          cleanColor = "#" + cleanColor;
-        }
-        // Validate hex format
-        if (/^#[0-9A-F]{6}$/i.test(cleanColor)) {
-          setBaseColor(cleanColor);
-          setPaletteName(inferColorName(cleanColor));
-        }
-      }
-      const secondaryParam = params.get("secondary");
-      if (secondaryParam) {
-        let clean = secondaryParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setSecondaryColor(clean);
-        }
-      }
-      const neutralParam = params.get("neutral");
-      if (neutralParam) {
-        let clean = neutralParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setNeutralColor(clean);
-        }
-      }
-      const successParam = params.get("success");
-      if (successParam) {
-        let clean = successParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setSuccessColor(clean);
-        }
-      }
-      const infoParam = params.get("info");
-      if (infoParam) {
-        let clean = infoParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setInfoColor(clean);
-        }
-      }
-      const warningParam = params.get("warning");
-      if (warningParam) {
-        let clean = warningParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setWarningColor(clean);
-        }
-      }
-      const errorParam = params.get("error");
-      if (errorParam) {
-        let clean = errorParam;
-        if (!clean.startsWith("#")) clean = "#" + clean;
-        if (/^#[0-9A-F]{6}$/i.test(clean)) {
-          setErrorColor(clean);
-        }
-      }
-    }
-  }, []);
-
-  // Update URL state query params on base color change
   const handleSetBaseColor = (hex: string) => {
-    // Basic validation
     if (/^#[0-9A-F]{6}$/i.test(hex)) {
       setBaseColor(hex);
       setPaletteName(inferColorName(hex));
-      
-      // Update URL query parameters silently
-      if (typeof window !== "undefined") {
-        const cleanHex = hex.replace("#", "");
-        const params = new URLSearchParams(window.location.search);
-        params.set("color", cleanHex);
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
-    }
-  };
-
-  const handleSetSuccessColor = (hex: string) => {
-    if (/^#[0-9A-F]{6}$/i.test(hex)) {
-      setSuccessColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("success", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
-    }
-  };
-
-  const handleSetInfoColor = (hex: string) => {
-    if (/^#[0-9A-F]{6}$/i.test(hex)) {
-      setInfoColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("info", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
-    }
-  };
-
-  const handleSetWarningColor = (hex: string) => {
-    if (/^#[0-9A-F]{6}$/i.test(hex)) {
-      setWarningColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("warning", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
+      updateColorURL("color", hex);
     }
   };
 
   const handleSetSecondaryColor = (hex: string) => {
     if (/^#[0-9A-F]{6}$/i.test(hex)) {
       setSecondaryColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("secondary", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
+      updateColorURL("secondary", hex);
     }
   };
 
   const handleSetNeutralColor = (hex: string) => {
     if (/^#[0-9A-F]{6}$/i.test(hex)) {
       setNeutralColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("neutral", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
+      updateColorURL("neutral", hex);
+    }
+  };
+
+  const handleSetSuccessColor = (hex: string) => {
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+      setSuccessColor(hex);
+      updateColorURL("success", hex);
+    }
+  };
+
+  const handleSetInfoColor = (hex: string) => {
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+      setInfoColor(hex);
+      updateColorURL("info", hex);
+    }
+  };
+
+  const handleSetWarningColor = (hex: string) => {
+    if (/^#[0-9A-F]{6}$/i.test(hex)) {
+      setWarningColor(hex);
+      updateColorURL("warning", hex);
     }
   };
 
   const handleSetErrorColor = (hex: string) => {
     if (/^#[0-9A-F]{6}$/i.test(hex)) {
       setErrorColor(hex);
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(window.location.search);
-        params.set("error", hex.replace("#", ""));
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.replaceState({}, "", newUrl);
-      }
+      updateColorURL("error", hex);
     }
   };
 
@@ -274,9 +179,15 @@ export default function PaletteGenerator({
       infoColor,
       warningColor,
       errorColor,
-    } as any;
+      lightnessModifier,
+      saturationModifier,
+      fontsSynced,
+    };
   }, [
     paletteName,
+    lightnessModifier,
+    saturationModifier,
+    fontsSynced,
     baseColor,
     primaryShades,
     secondaryColor,
@@ -296,21 +207,6 @@ export default function PaletteGenerator({
     warningColor,
     errorColor,
   ]);
-
-  // Load saved palettes from LocalStorage
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("tailwind-palette-presets");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setSavedPalettes(parsed);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load saved palettes:", e);
-    }
-  }, []);
 
   // Save current palette
   const handleSavePalette = () => {
@@ -362,6 +258,10 @@ export default function PaletteGenerator({
     setNeutralType(pal.neutralType);
     setHeadingFont(pal.headingFont);
     setBodyFont(pal.bodyFont);
+    setFontsSynced(pal.fontsSynced ?? pal.headingFont === pal.bodyFont);
+    setLightnessModifier(pal.lightnessModifier ?? 0);
+    setSaturationModifier(pal.saturationModifier ?? 0);
+    setHarmonyMode(pal.harmonyMode);
 
     if (pal.secondaryColor) handleSetSecondaryColor(pal.secondaryColor);
     if (pal.neutralColor) handleSetNeutralColor(pal.neutralColor);
@@ -370,15 +270,8 @@ export default function PaletteGenerator({
     if (pal.warningColor) handleSetWarningColor(pal.warningColor);
     if (pal.errorColor) handleSetErrorColor(pal.errorColor);
     
-    // Also update URL parameter silently for base color
-    if (typeof window !== "undefined") {
-      const cleanHex = pal.baseColor.replace("#", "");
-      const params = new URLSearchParams(window.location.search);
-      params.set("color", cleanHex);
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState({}, "", newUrl);
-    }
-    
+    updateColorURL("color", pal.baseColor);
+
     toast.success(`Loaded "${pal.name}"`);
   };
 
@@ -504,23 +397,6 @@ export default function PaletteGenerator({
         toggleTheme={toggleTheme}
         activeStudio="palette"
         onChangeStudio={onChangeStudio}
-        randomizePalette={handleRandomizeColor}
-        openExportPalette={() => setExportPaletteData({
-          name: currentPalette.name,
-          shades: currentPalette.shades,
-          secondary: currentPalette.secondary || [],
-          neutrals: currentPalette.neutrals,
-          success: currentPalette.success,
-          warning: currentPalette.warning,
-          error: currentPalette.error,
-        })}
-      />
-
-      {/* Main Workspace Preview */}
-      <PalettePreviewArea
-        currentPalette={currentPalette}
-        onSetBaseColor={handleSetBaseColor}
-        onSetSecondaryColor={handleSetSecondaryColor}
         openExportPalette={() => setExportPaletteData({
           name: currentPalette.name,
           shades: currentPalette.shades,
@@ -531,6 +407,13 @@ export default function PaletteGenerator({
           warning: currentPalette.warning,
           error: currentPalette.error,
         })}
+      />
+
+      {/* Main Workspace Preview */}
+      <PalettePreviewArea
+        currentPalette={currentPalette}
+        onSetBaseColor={handleSetBaseColor}
+        onSetSecondaryColor={handleSetSecondaryColor}
         onExportSingleScale={(name, shades) => setExportPaletteData({
           name,
           shades,

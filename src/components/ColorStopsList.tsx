@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ColorStop, GradientConfig } from "../lib/gradientUtils";
@@ -23,6 +24,7 @@ export default function ColorStopsList({
   addStop,
   isExtracting,
 }: ColorStopsListProps) {
+  const [draft, setDraft] = useState<{ id: string; value: string } | null>(null);
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, marginBottom: 12 }}>
@@ -50,6 +52,7 @@ export default function ColorStopsList({
               <div className="custom-stop-position">
                 <input
                   type="number"
+                  aria-label="Stop position"
                   min="0"
                   max="100"
                   value={Math.round(s.position)}
@@ -66,6 +69,7 @@ export default function ColorStopsList({
                 <label className="custom-stop-swatch" style={{ background: s.color }}>
                   <input
                     type="color"
+                    aria-label="Stop color"
                     value={s.color.slice(0, 7)} // color picker only takes 7-character hex (no alpha)
                     onChange={(e) => updateStopById(s.id, { color: e.target.value.toUpperCase() })}
                   />
@@ -73,15 +77,24 @@ export default function ColorStopsList({
                 <input
                   type="text"
                   className="custom-stop-hex mono"
-                  value={s.color.replace("#", "")}
+                  value={draft?.id === s.id ? draft.value : s.color.replace("#", "")}
+                  onFocus={() => setDraft({ id: s.id, value: s.color.replace("#", "") })}
+                  onBlur={() => {
+                    if (draft?.id === s.id && /^(?:[a-f\d]{3}|[a-f\d]{4}|[a-f\d]{6}|[a-f\d]{8})$/i.test(draft.value)) updateStopById(s.id, { color: `#${draft.value}` });
+                    setDraft(null);
+                  }}
+                  onKeyDown={e => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                  aria-label="Stop hex color"
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^A-Fa-f0-9]/g, "").slice(0, 8); // allow only valid hex chars up to 8 chars
-                    updateStopById(s.id, { color: `#${val.toUpperCase()}` });
+                    setDraft({ id: s.id, value: val.toUpperCase() });
+                    if (val.length === 6 || val.length === 8) updateStopById(s.id, { color: `#${val.toUpperCase()}` });
                   }}
                 />
                 <div className="custom-stop-opacity">
                   <input
                     type="number"
+                    aria-label="Stop opacity"
                     min="0"
                     max="100"
                     value={s.opacity ?? 100}
@@ -97,6 +110,7 @@ export default function ColorStopsList({
               {/* Remove Button */}
               <button
                 className="custom-stop-remove-btn"
+                aria-label="Remove color stop"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (gradient.stops.length <= 2) {

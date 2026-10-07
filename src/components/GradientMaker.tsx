@@ -10,7 +10,6 @@ import {
   encodeSVGForCSS,
   exportGradientPNG,
   exportNoisyGradientPNG,
-  formatColor,
   hexToRgb,
   randomHex,
   validateGradientPreset,
@@ -18,7 +17,7 @@ import {
   ColorStop,
   GradientPreset
 } from "@/lib/gradientUtils";
-import AppSkeleton from "./AppSkeleton";
+import { normalizeHexColor, readStoredList } from "@/lib/validation";
 import ControlsSidebar from "./ControlsSidebar";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 import Header from "./Header";
@@ -39,27 +38,9 @@ export default function GradientMaker({
 }: GradientMakerProps) {
   const [gradient, setGradient] = useState<GradientConfig>(DEFAULT_GRADIENT);
   const [name, setName] = useState<string>("");
-  const [saved, setSaved] = useState<GradientPreset[]>([]);
+  const [saved, setSaved] = useState<GradientPreset[]>(() => readStoredList("gradient-presets", validateGradientPreset));
   const [activeTab, setActiveTab] = useState<string>("Gradient"); // 'Gradient' | 'mockups'
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
-
-  // Load presets on mount safely on the client side
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("gradient-presets");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          const validated = parsed
-            .map((p) => validateGradientPreset(p))
-            .filter((p): p is GradientPreset => p !== null);
-          setSaved(validated);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load saved presets:", e);
-    }
-  }, []);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -72,7 +53,6 @@ export default function GradientMaker({
 
   const [colorFormat, setColorFormat] = useState<string>("HEX"); // 'HEX' | 'RGB' | 'HSL' | 'HSB'
   const [activeStopId, setActiveStopId] = useState<string>(DEFAULT_GRADIENT.stops[0].id);
-  const [isAppLoading, setIsAppLoading] = useState<boolean>(true);
   const [isExtracting, setIsExtracting] = useState<boolean>(false);
   const [presetToDelete, setPresetToDelete] = useState<string | null>(null);
   const [ratio, setRatio] = useState<string>("fluid"); // 'fluid' | '1:1' | '4:5' | '16:9' | '9:16' | '19:6' | '6:19'
@@ -82,19 +62,7 @@ export default function GradientMaker({
 
   const css = useMemo(() => buildGradientCSS(gradient), [gradient]);
 
-  const cssFull = useMemo(() => {
-    const stopsFormatted = [...gradient.stops]
-      .sort((a, b) => a.position - b.position)
-      .map((s) => `${formatColor(s.color, s.opacity ?? 100, colorFormat)} ${s.position.toFixed(1)}%`)
-      .join(", ");
-      
-    const cssRule = gradient.type === "linear"
-      ? `linear-gradient(${gradient.angle}deg, ${stopsFormatted})`
-      : gradient.type === "conic"
-      ? `conic-gradient(from ${gradient.angle}deg at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`
-      : `radial-gradient(${gradient.shape} farthest-corner at ${gradient.pos_x}% ${gradient.pos_y}%, ${stopsFormatted})`;
-    return `background: ${cssRule};`;
-  }, [gradient, colorFormat]);
+  const cssFull = useMemo(() => `background: ${buildGradientCSS(gradient, colorFormat)};`, [gradient, colorFormat]);
 
   const noisySVG = useMemo(() => {
     return buildNoisySVG(gradient, ratio);
@@ -114,17 +82,21 @@ export default function GradientMaker({
     return `linear-gradient(90deg, ${stops})`;
   }, [gradient.stops]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light");
-    const timer = setTimeout(() => {
-      setIsAppLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [theme]);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  const extractionVersion = useRef(0);
+  useEffect(() => () => {
+    dragCleanup.current?.();
+    extractionVersion.current += 1;
+  }, []);
 
   const update = (patch: Partial<GradientConfig>) => setGradient((g) => ({ ...g, ...patch }));
   
   const updateStopById = (id: string, patch: Partial<ColorStop>) => {
+    if (patch.color !== undefined) {
+      const parsed = normalizeHexColor(patch.color);
+      if (!parsed) return;
+      patch = { ...patch, color: parsed.color, ...([4, 8].includes(patch.color.replace(/^#/, "").length) ? { opacity: parsed.alpha * 100 } : {}) };
+    }
     setGradient((g) => {
       const stops = g.stops.map((s) => (s.id === id ? { ...s, ...patch } : s));
       return { ...g, stops };
@@ -132,14 +104,10 @@ export default function GradientMaker({
   };
 
   const addStop = () => {
-    setGradient((g) => {
-      const last = g.stops[g.stops.length - 1];
-      const first = g.stops[0];
-      const mid = ((last?.position ?? 100) + (first?.position ?? 0)) / 2;
-      const newId = Date.now().toString();
-      setActiveStopId(newId);
-      return { ...g, stops: [...g.stops, { id: newId, color: randomHex(), position: Number(mid.toFixed(1)), opacity: 100 }] };
-    });
+    const id = crypto.randomUUID();
+    const color = randomHex();
+    setGradient(g => ({ ...g, stops: [...g.stops, { id, color, position: 50, opacity: 100 }] }));
+    setActiveStopId(id);
   };
 
   const removeStopById = (id: string) => {
@@ -196,7 +164,7 @@ export default function GradientMaker({
     }
   };
 
-  const downloadPNG = () => {
+  const downloadPNG = async () => {
     let width = 1920;
     let height = 1080;
     
@@ -207,10 +175,15 @@ export default function GradientMaker({
     else if (ratio === "6:19") { width = 600; height = 1900; }
     else if (ratio === "16:9") { width = 1920; height = 1080; }
 
-    if (activeTab === "noisy") {
-      exportNoisyGradientPNG(noisySVG, width, height, `noisy-gradient-${Date.now()}.png`);
-    } else {
-      exportGradientPNG(gradient, width, height, `gradient-${Date.now()}.png`);
+    try {
+      if (activeTab === "noisy") {
+        await exportNoisyGradientPNG(noisySVG, width, height, `noisy-gradient-${Date.now()}.png`);
+      } else {
+        await exportGradientPNG(gradient, width, height, `gradient-${Date.now()}.png`);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to export PNG");
     }
   };
 
@@ -250,7 +223,7 @@ export default function GradientMaker({
     }
     try {
       const newPreset = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         name: presetName,
         config: gradient,
       };
@@ -290,11 +263,7 @@ export default function GradientMaker({
 
   const flipGradient = () => {
     setGradient((g) => {
-      // Reverse stops color order to flip gradient
-      const reversedStops = [...g.stops].reverse().map((s, idx) => ({
-        ...s,
-        position: g.stops[idx].position
-      }));
+      const reversedStops = [...g.stops].reverse().map(s => ({ ...s, position: 100 - s.position }));
       return { ...g, stops: reversedStops };
     });
   };
@@ -309,11 +278,14 @@ export default function GradientMaker({
 
   const handleDrag = (stopId: string, e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
+    dragCleanup.current?.();
     const track = e.currentTarget.parentElement;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     
     const moveHandler = (moveEvent: MouseEvent | TouchEvent) => {
+      if ('touches' in moveEvent && !moveEvent.touches.length) return;
+      if (moveEvent.cancelable) moveEvent.preventDefault();
       const clientX = 'touches' in moveEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
       const offsetX = clientX - rect.left;
       const pct = Math.max(0, Math.min(100, (offsetX / rect.width) * 100));
@@ -331,23 +303,47 @@ export default function GradientMaker({
       window.removeEventListener("mouseup", upHandler);
       window.removeEventListener("touchmove", moveHandler);
       window.removeEventListener("touchend", upHandler);
+      window.removeEventListener("touchcancel", upHandler);
+      window.removeEventListener("blur", upHandler);
+      dragCleanup.current = null;
     };
 
     window.addEventListener("mousemove", moveHandler);
     window.addEventListener("mouseup", upHandler);
-    window.addEventListener("touchmove", moveHandler);
+    window.addEventListener("touchmove", moveHandler, { passive: false });
     window.addEventListener("touchend", upHandler);
+    window.addEventListener("touchcancel", upHandler);
+    window.addEventListener("blur", upHandler);
+    dragCleanup.current = upHandler;
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const version = ++extractionVersion.current;
+    e.target.value = "";
+    if (!file.type.startsWith("image/") || file.size > 20 * 1024 * 1024) {
+      setIsExtracting(false);
+      toast.error("Choose an image smaller than 20 MB");
+      return;
+    }
+    const fail = () => {
+      if (version !== extractionVersion.current) return;
+      setIsExtracting(false);
+      toast.error("Could not read this image");
+    };
     setIsExtracting(true);
     const reader = new FileReader();
+    reader.onerror = fail;
+    reader.onabort = fail;
     reader.onload = (event) => {
+      if (version !== extractionVersion.current) return;
       const img = new Image();
+      img.onerror = fail;
       img.onload = () => {
+        if (version !== extractionVersion.current) return;
+        try {
         const canvas = document.createElement("canvas");
         canvas.width = 10;
         canvas.height = 10;
@@ -407,15 +403,12 @@ export default function GradientMaker({
           opacity: 100,
         }));
 
-        setTimeout(() => {
-          setGradient((g) => ({ ...g, stops }));
-          if (stops.length > 0) {
-            setActiveStopId(stops[0].id);
-          }
-          setIsExtracting(false);
-        }, 650);
-
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        setGradient((g) => ({ ...g, stops }));
+        setActiveStopId(stops[0].id);
+        setIsExtracting(false);
+        } catch {
+          fail();
+        }
       };
       if (event.target?.result) {
         img.src = event.target.result as string;
@@ -423,10 +416,6 @@ export default function GradientMaker({
     };
     reader.readAsDataURL(file);
   };
-
-  if (isAppLoading) {
-    return <AppSkeleton theme={theme} toggleTheme={toggleTheme} />;
-  }
 
   return (
     <div className={`app-shell ${isSidebarCollapsed && activeTab === "mockups" ? "sidebar-collapsed" : ""}`}>

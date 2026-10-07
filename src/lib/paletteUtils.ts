@@ -1,4 +1,5 @@
 import chroma from "chroma-js";
+import { exportSlug, exportComment } from "./exportText";
 
 export interface PaletteShade {
   level: string; // "50", "100", ..., "950"
@@ -10,6 +11,9 @@ export interface PaletteShade {
 }
 
 export interface FullPalette {
+  lightnessModifier?: number;
+  saturationModifier?: number;
+  fontsSynced?: boolean;
   name: string;
   description: string;
   createdDate: string;
@@ -84,8 +88,8 @@ export const generateShades = (
         hex: hexVal,
         rgb: rgbVal,
         hsl: hslVal,
-        contrastOnWhite: Number(contrWhite.toFixed(2)),
-        contrastOnBlack: Number(contrBlack.toFixed(2)),
+        contrastOnWhite: contrWhite,
+        contrastOnBlack: contrBlack,
       });
     });
     return shades;
@@ -139,8 +143,8 @@ export const generateShades = (
       hex: hexVal,
       rgb: rgbVal,
       hsl: hslVal,
-      contrastOnWhite: Number(contrWhite.toFixed(2)),
-      contrastOnBlack: Number(contrBlack.toFixed(2)),
+      contrastOnWhite: contrWhite,
+      contrastOnBlack: contrBlack,
     });
   });
 
@@ -296,7 +300,7 @@ export const getContrastLabel = (ratio: number): { score: string; text: string; 
     return { score: "AA", text: "text-white bg-green-500 font-extrabold shadow-sm", bg: "Passes AA compliance (good readability)." };
   }
   if (ratio >= 3) {
-    return { score: "A", text: "text-amber-950 bg-amber-400 font-extrabold shadow-sm", bg: "Passes A compliance (minimum for large fonts)." };
+    return { score: "AA Large", text: "text-amber-950 bg-amber-400 font-extrabold shadow-sm", bg: "Passes AA for large text only (18pt regular or 14pt bold)." };
   }
   return { score: "Fail", text: "text-white bg-rose-600 font-extrabold shadow-sm", bg: "Fails WCAG accessibility guidelines." };
 };
@@ -321,7 +325,7 @@ export const generateTailwindConfig = (
     }).join("\n");
   };
 
-  const slug = paletteName.toLowerCase().replace(/\s+/g, "-");
+  const slug = exportSlug(paletteName);
 
   if (isSingleScale) {
     return `/** @type {import('tailwindcss').Config} */
@@ -390,9 +394,9 @@ export const generateCSSVariables = (
   };
 
   if (isSingleScale) {
-    const prefix = (paletteName || "primary").toLowerCase().replace(/\s+/g, "-");
+    const prefix = exportSlug((paletteName || "primary"));
     return `:root {
-  /* ${paletteName || "Primary"} Scale */
+  /* ${exportComment(paletteName || "Primary")} Scale */
 ${buildCSSVars(shades, prefix)}
 }`;
   }
@@ -443,7 +447,7 @@ export const generateJSONTokens = (
   };
 
   if (isSingleScale) {
-    const prefix = (paletteName || "primary").toLowerCase().replace(/\s+/g, "-");
+    const prefix = exportSlug((paletteName || "primary"));
     const tokens = {
       [prefix]: getShadesObj(shades),
     };
@@ -476,7 +480,7 @@ export const generateFigmaTokens = (
   const isSingleScale = !secondary?.length && !neutrals?.length && !success?.length && !info?.length && !warning?.length && !error?.length;
 
   const buildGroup = (list: PaletteShade[], rampName: string) => {
-    const group: Record<string, any> = {};
+    const group: Record<string, unknown> = {};
     list.forEach((s) => {
       const cleanLevel = s.level.replace("-Base", "");
       const c = chroma(s.hex);
@@ -506,7 +510,7 @@ export const generateFigmaTokens = (
   };
 
   if (isSingleScale) {
-    const prefix = (paletteName || "primary").toLowerCase().replace(/\s+/g, "-");
+    const prefix = exportSlug((paletteName || "primary"));
     const groupName = paletteName || "Primary";
     const tokens = {
       "Colors": {
@@ -540,7 +544,7 @@ export interface NamedScale {
 
 export const generateMultiScaleTailwind = (scales: NamedScale[]): string => {
   const entries = scales.map(({ name, shades }) => {
-    const slug = name.toLowerCase().replace(/\s+/g, "-");
+    const slug = exportSlug(name);
     const rows = shades
       .map((s) => {
         const lvl = s.level.replace("-Base", "");
@@ -564,11 +568,11 @@ ${entries.join("\n")}
 
 export const generateMultiScaleCSS = (scales: NamedScale[]): string => {
   const blocks = scales.map(({ name, shades }) => {
-    const prefix = name.toLowerCase().replace(/\s+/g, "-");
+    const prefix = exportSlug(name);
     const rows = shades
       .map((s) => `  --color-${prefix}-${s.level.replace("-Base", "")}: ${s.hex.toUpperCase()};`)
       .join("\n");
-    return `  /* ${name} */\n${rows}`;
+    return `  /* ${exportComment(name)} */\n${rows}`;
   });
 
   return `:root {\n${blocks.join("\n\n")}\n}`;
@@ -577,7 +581,7 @@ export const generateMultiScaleCSS = (scales: NamedScale[]): string => {
 export const generateMultiScaleJSON = (scales: NamedScale[]): string => {
   const obj: Record<string, Record<string, string>> = {};
   scales.forEach(({ name, shades }) => {
-    const key = name.toLowerCase().replace(/\s+/g, "-");
+    const key = exportSlug(name);
     obj[key] = {};
     shades.forEach((s) => {
       obj[key][s.level.replace("-Base", "")] = s.hex.toUpperCase();
@@ -587,10 +591,10 @@ export const generateMultiScaleJSON = (scales: NamedScale[]): string => {
 };
 
 export const generateMultiScaleFigma = (scales: NamedScale[]): string => {
-  const groups: Record<string, Record<string, any>> = {};
+  const groups: Record<string, Record<string, unknown>> = {};
   scales.forEach(({ name, shades }) => {
-    const ramp = name.toLowerCase().replace(/\s+/g, "-");
-    const group: Record<string, any> = {};
+    const ramp = exportSlug(name);
+    const group: Record<string, unknown> = {};
     shades.forEach((s) => {
       const lvl = s.level.replace("-Base", "");
       const c = chroma(s.hex);
@@ -620,7 +624,7 @@ export const parseAnyColor = (input: string): string | null => {
     if (chroma.valid(str)) {
       return chroma(str).hex().toUpperCase();
     }
-  } catch (e) {}
+  } catch {}
 
   // 2. Hex fallback (e.g. "c54b7a" without #)
   if (/^[0-9a-f]{3,8}$/i.test(str)) {
@@ -639,7 +643,7 @@ export const parseAnyColor = (input: string): string | null => {
     const v = parseFloat(hsbMatch[3]) / 100;
     try {
       return chroma.hsv(h, s, v).hex().toUpperCase();
-    } catch (e) {}
+    } catch {}
   }
 
   // 4. Raw comma separated formats: E.g., "197, 75, 122" or "335, 51%, 53%"
@@ -654,13 +658,13 @@ export const parseAnyColor = (input: string): string | null => {
       try {
         const c = chroma.hsl(v1, v2 / 100, v3 / 100);
         return c.hex().toUpperCase();
-      } catch (e) {}
+      } catch {}
     }
     if (v1 <= 255 && v2 <= 255 && v3 <= 255) {
       try {
         const c = chroma(v1, v2, v3);
         return c.hex().toUpperCase();
-      } catch (e) {}
+      } catch {}
     }
   }
 

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useDialog } from "@/hooks/useDialog";
 import {
   Palette,
   Layout,
   CheckCircle2,
-  XCircle,
-  Eye,
   Sun,
   ExternalLink,
   Moon,
@@ -26,8 +25,8 @@ const makeShade = (level: string, hex: string): PaletteShade => {
     hex: hex.toUpperCase(),
     rgb: `rgb(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]})`,
     hsl: `hsl(${Math.round(isNaN(hslArray[0]) ? 0 : hslArray[0])}, ${Math.round(hslArray[1] * 100)}%, ${Math.round(hslArray[2] * 100)}%)`,
-    contrastOnWhite: Number(chroma.contrast(hex, "#ffffff").toFixed(2)),
-    contrastOnBlack: Number(chroma.contrast(hex, "#000000").toFixed(2)),
+    contrastOnWhite: chroma.contrast(hex, "#ffffff"),
+    contrastOnBlack: chroma.contrast(hex, "#000000"),
   };
 };
 
@@ -418,7 +417,6 @@ interface PalettePreviewAreaProps {
   currentPalette: FullPalette;
   onSetBaseColor: (hex: string) => void;
   onSetSecondaryColor: (hex: string) => void;
-  openExportPalette?: () => void;
   onExportSingleScale?: (name: string, shades: PaletteShade[]) => void;
   onExportAllScales?: (scales: NamedScale[]) => void;
 }
@@ -430,7 +428,6 @@ export default function PalettePreviewArea({
   currentPalette,
   onSetBaseColor,
   onSetSecondaryColor,
-  openExportPalette,
   onExportSingleScale,
   onExportAllScales,
 }: PalettePreviewAreaProps) {
@@ -439,6 +436,7 @@ export default function PalettePreviewArea({
   const [previewDark, setPreviewDark] = useState<boolean>(false);
   const [selectedMaterialColor, setSelectedMaterialColor] = useState<string>("Blue");
   const [isA11yModalOpen, setIsA11yModalOpen] = useState<boolean>(false);
+  const a11yDialogRef = useDialog(isA11yModalOpen, () => setIsA11yModalOpen(false));
   const pillsRef = useRef<HTMLDivElement>(null);
 
   // Scroll selected pill into view (inside pills container only — never scrolls the page)
@@ -479,7 +477,7 @@ export default function PalettePreviewArea({
       if (foundPal) list = foundPal.shades;
     }
 
-    const matched = list.find((s) => s.level === selectedShadeInfo.level);
+    const matched = list.find((s) => s.level.replace("-Base", "") === selectedShadeInfo.level.replace("-Base", ""));
     return matched ? { category: selectedShadeInfo.category, shade: matched } : null;
   }, [selectedShadeInfo, currentPalette]);
 
@@ -543,9 +541,6 @@ export default function PalettePreviewArea({
                   onClick={() => {
                     setSelectedShadeInfo({ category: title, level: sh.level });
                     copyToClipboard(sh.hex);
-                    if (cleanTitle === "Brand" || cleanTitle === "Primary") {
-                      onSetBaseColor(sh.hex);
-                    }
                   }}
                   className={`group relative aspect-[1.1/1] rounded-xl overflow-hidden shadow-sm border transition-all duration-200 active:scale-95 cursor-pointer ${
                     isSelected ? "ring-2 ring-accent scale-102 border-accent" : "border-border/30 hover:scale-105 hover:shadow-md"
@@ -611,7 +606,7 @@ export default function PalettePreviewArea({
                 <div className="bg-input/40 px-3 py-1 rounded-lg border border-border/60 flex flex-col justify-center min-w-[100px]">
                   <div className="text-[7.5px] font-bold text-muted-foreground uppercase tracking-wider">On White (#FFF)</div>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-xs font-bold font-mono">{selectedShade.shade.contrastOnWhite}:1</span>
+                    <span className="text-xs font-bold font-mono">{selectedShade.shade.contrastOnWhite.toFixed(2)}:1</span>
                     <span className={`text-[7px] font-bold px-1 py-0.25 rounded ${getContrastLabel(selectedShade.shade.contrastOnWhite).text}`}>
                       {getContrastLabel(selectedShade.shade.contrastOnWhite).score}
                     </span>
@@ -621,7 +616,7 @@ export default function PalettePreviewArea({
                 <div className="bg-input/40 px-3 py-1 rounded-lg border border-border/60 flex flex-col justify-center min-w-[100px]">
                   <div className="text-[7.5px] font-bold text-muted-foreground uppercase tracking-wider">On Black (#000)</div>
                   <div className="flex items-baseline gap-1 mt-0.5">
-                    <span className="text-xs font-bold font-mono">{selectedShade.shade.contrastOnBlack}:1</span>
+                    <span className="text-xs font-bold font-mono">{selectedShade.shade.contrastOnBlack.toFixed(2)}:1</span>
                     <span className={`text-[7px] font-bold px-1 py-0.25 rounded ${getContrastLabel(selectedShade.shade.contrastOnBlack).text}`}>
                       {getContrastLabel(selectedShade.shade.contrastOnBlack).score}
                     </span>
@@ -1396,7 +1391,7 @@ export default function PalettePreviewArea({
 
       {/* Accessibility Modal Popup */}
       {isA11yModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div ref={a11yDialogRef} role="dialog" aria-modal="true" aria-label="Accessibility guide" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-background border border-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
             {/* Header */}
             <div className="flex justify-between items-center px-5 py-4 border-b border-border bg-card/20">
@@ -1405,6 +1400,7 @@ export default function PalettePreviewArea({
                 WCAG Accessibility Guide
               </h3>
               <button
+                aria-label="Close accessibility guide"
                 onClick={() => setIsA11yModalOpen(false)}
                 className="text-muted-foreground hover:text-foreground hover:bg-input px-3 py-1.5 rounded-lg border border-border/60 transition-all cursor-pointer text-xs font-bold"
               >

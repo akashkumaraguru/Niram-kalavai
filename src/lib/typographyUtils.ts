@@ -1,3 +1,5 @@
+import { exportComment } from "./exportText";
+
 export interface TypographyStyle {
   id: string; // e.g. "h1", "body-medium"
   name: string; // e.g. "H1", "Body Medium"
@@ -30,6 +32,7 @@ export interface TypographySystem {
   namingConvention: "camelCase" | "kebab-case" | "snake_case" | "PascalCase";
   responsiveScale: "none" | "stepped" | "fluid";
   styles: TypographyStyle[];
+  styleDefs?: StyleDefinition[];
 }
 
 export const SCALES = [
@@ -115,15 +118,23 @@ export const generateStyles = (
   });
 };
 
+export const responsiveFontSize = (size: number, mode: TypographySystem["responsiveScale"]): string => {
+  if (mode !== "fluid") return `${size}px`;
+  const min = Math.min(size, Math.max(10, Math.round(size * 0.8)));
+  const slope = (size - min) / 9.6; // Interpolate between 320px and 1280px viewports.
+  const intercept = min - slope * 3.2;
+  return `clamp(${min}px, calc(${Number(intercept.toFixed(4))}px + ${Number(slope.toFixed(4))}vw), ${size}px)`;
+};
+
 // ── Code Exporters ───────────────────────────────────────────────────────────
 
 export const exportAsJSON = (system: TypographySystem): string => {
-  const formatted: Record<string, any> = {
+  const formatted = {
     fontFamily: system.fontFamily,
     baseSize: `${system.baseSize}px`,
     scaleRatio: system.scaleRatio,
     rounding: system.rounding,
-    styles: {},
+    styles: {} as Record<string, unknown>,
   };
   system.styles.forEach((st) => {
     const key = formatName(st.id, system.namingConvention);
@@ -138,7 +149,7 @@ export const exportAsJSON = (system: TypographySystem): string => {
 };
 
 export const exportAsDesignTokens = (system: TypographySystem): string => {
-  const tokens: Record<string, any> = {
+  const tokens: Record<string, unknown> = {
     fontFamily: {
       $type: "fontFamily",
       $value: system.fontFamily,
@@ -176,7 +187,7 @@ export const exportAsDesignTokens = (system: TypographySystem): string => {
 
 export const exportAsCSSVariables = (system: TypographySystem): string => {
   const lines: string[] = [
-    `/* Typography: ${system.name} */`,
+    `/* Typography: ${exportComment(system.name)} */`,
     `:root {`,
     `  --font-family: '${system.fontFamily}', sans-serif;`,
     `  --base-font-size: ${system.baseSize}px;`,
@@ -185,8 +196,8 @@ export const exportAsCSSVariables = (system: TypographySystem): string => {
 
   system.styles.forEach((st) => {
     const key = formatName(st.id, system.namingConvention);
-    lines.push(`  /* ${st.name} */`);
-    lines.push(`  --text-${key}-size: ${st.sizePx}px;`);
+    lines.push(`  /* ${exportComment(st.name)} */`);
+    lines.push(`  --text-${key}-size: ${responsiveFontSize(st.sizePx, system.responsiveScale)};`);
     lines.push(`  --text-${key}-line-height: ${st.lineHeight};`);
     lines.push(`  --text-${key}-letter-spacing: ${st.letterSpacing}em;`);
     lines.push(`  --text-${key}-weight: ${st.fontWeight};`);
@@ -194,12 +205,17 @@ export const exportAsCSSVariables = (system: TypographySystem): string => {
   });
 
   lines.push(`}`);
+  if (system.responsiveScale === "stepped") {
+    lines.push("@media (max-width: 767px) {", "  :root {");
+    system.styles.forEach(st => lines.push(`    --text-${formatName(st.id, system.namingConvention)}-size: ${Math.min(st.sizePx, Math.max(10, Math.round(st.sizePx * 0.8)))}px;`));
+    lines.push("  }", "}");
+  }
   return lines.join("\n");
 };
 
 export const exportAsSCSS = (system: TypographySystem): string => {
   const lines: string[] = [
-    `// Typography Variables: ${system.name}`,
+    `// Typography Variables: ${exportComment(system.name)}`,
     `$font-family: '${system.fontFamily}', sans-serif;`,
     `$base-font-size: ${system.baseSize}px;`,
     ``,
@@ -207,14 +223,15 @@ export const exportAsSCSS = (system: TypographySystem): string => {
 
   system.styles.forEach((st) => {
     const key = formatName(st.id, system.namingConvention);
-    lines.push(`// ${st.name}`);
-    lines.push(`$text-${key}-size: ${st.sizePx}px;`);
+    lines.push(`// ${exportComment(st.name)}`);
+    lines.push(`$text-${key}-size: ${system.responsiveScale === "stepped" ? `var(--text-${key}-size)` : responsiveFontSize(st.sizePx, system.responsiveScale)};`);
     lines.push(`$text-${key}-line-height: ${st.lineHeight};`);
     lines.push(`$text-${key}-letter-spacing: ${st.letterSpacing}em;`);
     lines.push(`$text-${key}-weight: ${st.fontWeight};`);
     lines.push(``);
   });
 
+  if (system.responsiveScale === "stepped") lines.push(exportAsCSSVariables(system));
   return lines.join("\n");
 };
 
@@ -223,11 +240,16 @@ export const exportAsTailwindConfig = (system: TypographySystem): string => {
   system.styles.forEach((st) => {
     const key = formatName(st.id, system.namingConvention);
     stylesObj.push(
-      `        '${key}': ['${st.sizePx}px', { lineHeight: '${st.lineHeight}', letterSpacing: '${st.letterSpacing}em', fontWeight: '${st.fontWeight}' }],`
+      `        '${key}': ['${system.responsiveScale === "stepped" ? `var(--text-${key}-size)` : responsiveFontSize(st.sizePx, system.responsiveScale)}', { lineHeight: '${st.lineHeight}', letterSpacing: '${st.letterSpacing}em', fontWeight: '${st.fontWeight}' }],`
     );
   });
 
-  return `module.exports = {
+  const desktop = Object.fromEntries(system.styles.map(st => [`--text-${formatName(st.id, system.namingConvention)}-size`, `${st.sizePx}px`]));
+  const mobile = Object.fromEntries(system.styles.map(st => [`--text-${formatName(st.id, system.namingConvention)}-size`, `${Math.min(st.sizePx, Math.max(10, Math.round(st.sizePx * 0.8)))}px`]));
+  const responsivePlugin = system.responsiveScale === "stepped"
+    ? `\n  plugins: [require('tailwindcss/plugin')(({ addBase }) => addBase(${JSON.stringify({ ":root": desktop, "@media (max-width: 767px)": { ":root": mobile } }, null, 2)}))],`
+    : "";
+  return `module.exports = {${responsivePlugin}
   theme: {
     extend: {
       fontFamily: {
@@ -245,15 +267,32 @@ export const exportAsReactTheme = (system: TypographySystem): string => {
   const styleConfigs: string[] = [];
   system.styles.forEach((st) => {
     const key = formatName(st.id, system.namingConvention);
-    styleConfigs.push(`    ${key}: {
+    styleConfigs.push(`    ${JSON.stringify(key)}: {
       fontFamily: "'${system.fontFamily}', sans-serif",
-      fontSize: '${st.sizePx}px',
+      fontSize: '${responsiveFontSize(st.sizePx, system.responsiveScale)}',
       lineHeight: ${st.lineHeight},
       letterSpacing: '${st.letterSpacing}em',
       fontWeight: ${st.fontWeight},
     },`);
   });
 
+  const mobileSizes = Object.fromEntries(system.styles.map(st => [formatName(st.id, system.namingConvention), `${Math.min(st.sizePx, Math.max(10, Math.round(st.sizePx * 0.8)))}px`]));
+  const responsiveHook = system.responsiveScale === "stepped" ? `
+const mobileSizes: Record<string, string> = ${JSON.stringify(mobileSizes, null, 2)};
+const mobileQuery = '(max-width: 767px)';
+const subscribe = (notify: () => void) => {
+  const query = window.matchMedia(mobileQuery);
+  query.addEventListener('change', notify);
+  return () => query.removeEventListener('change', notify);
+};
+export const useTypography = () => {
+  const theme = React.useContext(TypographyContext);
+  const mobile = React.useSyncExternalStore(subscribe, () => window.matchMedia(mobileQuery).matches, () => false);
+  return React.useMemo(() => mobile ? {
+    ...theme,
+    styles: Object.fromEntries(Object.entries(theme.styles).map(([key, value]) => [key, { ...value, fontSize: mobileSizes[key] ?? value.fontSize }]))
+  } : theme, [theme, mobile]);
+};` : "export const useTypography = () => React.useContext(TypographyContext);";
   return `import React from 'react';
 
 export const typographyTheme = {
@@ -266,7 +305,7 @@ ${styleConfigs.join("\n")}
 
 // Example Hook or Context Usage
 export const TypographyContext = React.createContext(typographyTheme);
-export const useTypography = () => React.useContext(TypographyContext);
+${responsiveHook}
 `;
 };
 
@@ -298,7 +337,7 @@ export const exportAsAndroidXML = (system: TypographySystem): string => {
   const stylesXml: string[] = [];
   system.styles.forEach((st) => {
     const key = formatName(st.id, "PascalCase");
-    stylesXml.push(`    <!-- ${st.name} style -->
+    stylesXml.push(`    <!-- ${exportComment(st.name).replace(/--/g, " ")} style -->
     <style name="Typography.${key}">
         <item name="android:fontFamily">@font/${system.fontFamily.toLowerCase().replace(/\s+/g, "_")}</item>
         <item name="android:textSize">${st.sizePx}sp</item>
@@ -352,7 +391,7 @@ ${stylesSwift.join("\n\n")}
 };
 
 export const exportAsFigmaVariables = (system: TypographySystem): string => {
-  const vars: any[] = [
+  const vars: { name: string; type: "STRING" | "FLOAT"; value: string | number }[] = [
     { name: "typography/font-family", type: "STRING", value: system.fontFamily },
     { name: "typography/base-size", type: "FLOAT", value: system.baseSize },
   ];
@@ -379,7 +418,7 @@ export const exportAsFigmaVariables = (system: TypographySystem): string => {
 };
 
 export const exportAsTokenStudio = (system: TypographySystem): string => {
-  const ts: Record<string, any> = {
+  const ts: Record<string, Record<string, { value: string; type: string }>> = {
     fontFamilies: {
       primary: { value: system.fontFamily, type: "fontFamilies" },
     },

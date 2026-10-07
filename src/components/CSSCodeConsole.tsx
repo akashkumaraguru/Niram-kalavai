@@ -18,7 +18,7 @@ export default function CSSCodeConsole({
         <div className="css-box-header">
           <span className="css-box-title">CSS Code</span>
           <div className="format-toggle">
-            {["HEX", "RGB", "HSL", "HSB"].map((fmt) => (
+            {["HEX", "RGB", "HSL"].map((fmt) => (
               <button
                 key={fmt}
                 className={`format-btn ${colorFormat === fmt ? "active" : ""}`}

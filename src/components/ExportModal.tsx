@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Copy, Check, Download } from "lucide-react";
 import { toast } from "sonner";
+import { useDialog } from "@/hooks/useDialog";
+import { downloadBlob } from "@/lib/downloads";
 import {
   PaletteShade,
   NamedScale,
@@ -49,6 +51,10 @@ export default function ExportModal({
   const [activeTab, setActiveTab] = useState<TabType>("tailwind");
   const [copied, setCopied] = useState<boolean>(false);
 
+  const dialogRef = useDialog(isOpen, onClose);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+
   if (!isOpen) return null;
 
   const isMultiScale = !!scales?.length;
@@ -79,7 +85,8 @@ export default function ExportModal({
       await navigator.clipboard.writeText(code);
       setCopied(true);
       toast.success("Code copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error(err);
       toast.error("Failed to copy code");
@@ -90,14 +97,7 @@ export default function ExportModal({
     // When exporting all scales as Figma tokens → "primitive-tokens.json"
     if (isMultiScale && activeTab === "figma") {
       const blob = new Blob([code], { type: "application/json" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = "primitive-tokens.json";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, "primitive-tokens.json");
       toast.success("Downloaded primitive-tokens.json");
       return;
     }
@@ -117,14 +117,7 @@ export default function ExportModal({
     }
 
     const blob = new Blob([code], { type: mimeType });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, filename);
     toast.success(`Downloaded ${filename}`);
   };
 
@@ -133,7 +126,7 @@ export default function ExportModal({
     : "Export Palette";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Export palette" tabIndex={-1} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full sm:max-w-2xl bg-card border border-border sm:rounded-xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh] text-foreground transition-colors">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
@@ -147,6 +140,7 @@ export default function ExportModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close export dialog"
             className="p-1 rounded-lg hover:bg-input transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X size={18} />

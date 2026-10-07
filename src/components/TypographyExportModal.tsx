@@ -23,8 +23,10 @@ import {
   Type,
   X
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useDialog } from "@/hooks/useDialog";
+import { downloadBlob } from "@/lib/downloads";
 
 type ExportFormat =
   | "json"
@@ -54,14 +56,9 @@ export default function TypographyExportModal({
   const [exportFormat, setExportFormat] = useState<ExportFormat>("css");
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Close on Escape key press
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  const dialogRef = useDialog(isOpen, onClose);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
 
   if (!isOpen) return null;
 
@@ -100,8 +97,9 @@ export default function TypographyExportModal({
       await navigator.clipboard.writeText(getExportCode());
       setCopied(true);
       toast.success("Token configurations copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
       toast.error("Failed to copy export code");
     }
   };
@@ -151,14 +149,7 @@ export default function TypographyExportModal({
     }
 
     const blob = new Blob([code], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, filename);
     toast.success(`Downloaded ${filename}`);
   };
 
@@ -199,6 +190,7 @@ export default function TypographyExportModal({
 
   return (
     <div
+      ref={dialogRef} role="dialog" aria-modal="true" aria-label="Export typography" tabIndex={-1}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 md:p-6"
       onClick={onClose}
     >

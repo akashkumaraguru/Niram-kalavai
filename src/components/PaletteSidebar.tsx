@@ -49,7 +49,7 @@ const formatColor = (hex: string, format: string): string => {
     } else {
       return c.hex().toUpperCase();
     }
-  } catch (e) {
+  } catch {
     return hex;
   }
 };
@@ -75,7 +75,7 @@ const getTripleValues = (colorHex: string, format: string): [number, number, num
       const [r, g, b] = c.rgb();
       return [r, g, b];
     }
-  } catch (e) {
+  } catch {
     return [0, 0, 0];
   }
 };
@@ -168,15 +168,12 @@ function ColorConfigRow({
   const [localV3, setLocalV3] = useState("");
   const [activeInputIndex, setActiveInputIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (!isFocused && activeInputIndex === null) {
-      setLocalInput(formatColor(currentColor, colorFormat));
-      const [x1, x2, x3] = getTripleValues(currentColor, colorFormat);
-      setLocalV1(String(x1));
-      setLocalV2(String(x2));
-      setLocalV3(String(x3));
-    }
-  }, [currentColor, colorFormat, isFocused, activeInputIndex]);
+  const tripleValues = getTripleValues(currentColor, colorFormat).map(String);
+  const displayedTriple = activeInputIndex === null ? tripleValues : [localV1, localV2, localV3];
+  const focusTriple = (index: number) => {
+    setLocalV1(tripleValues[0]); setLocalV2(tripleValues[1]); setLocalV3(tripleValues[2]);
+    setActiveInputIndex(index);
+  };
 
   const handleLocalChange = (val: string) => {
     if (colorFormat === "hex") {
@@ -256,7 +253,7 @@ function ColorConfigRow({
         hex = chroma(n1, n2, n3).hex();
       }
       onChangeColor(hex.toUpperCase());
-    } catch (e) { }
+    } catch { }
   };
 
   const handleTripleBlur = () => {
@@ -271,15 +268,8 @@ function ColorConfigRow({
     c => c.hex.toLowerCase() === currentColor.toLowerCase()
   )?.name || "Custom";
 
-  const scaleDropdownOptions = REFERENCE_COLORS.map(c => ({
-    label: c.name,
-    value: c.name,
-    colorHex: c.hex,
-  }));
-
-  const dropdownOptionsWithCustom = currentRefName === "Custom"
-    ? [{ label: "Custom", value: "Custom" }, ...scaleDropdownOptions]
-    : scaleDropdownOptions;
+  const options = REFERENCE_COLORS.map(c => ({ label: c.name, value: c.name, colorHex: c.hex }));
+  const dropdownOptionsWithCustom = currentRefName === "Custom" ? [{ label: "Custom", value: "Custom" }, ...options] : options;
 
   return (
     <div className="group relative flex flex-col gap-1.5 p-3 rounded-xl bg-card/45 border border-border/50 hover:border-accent/40 focus-within:border-accent/60 transition-all duration-300 shadow-sm hover:shadow-md">
@@ -306,9 +296,10 @@ function ColorConfigRow({
           {colorFormat === "hex" ? (
             <input
               type="text"
-              value={localInput}
+              aria-label={`${label} value`}
+                  value={isFocused ? localInput : formatColor(currentColor, colorFormat)}
               onChange={(e) => handleLocalChange(e.target.value)}
-              onFocus={() => setIsFocused(true)}
+              onFocus={() => { setLocalInput(formatColor(currentColor, colorFormat)); setIsFocused(true); }}
               onBlur={handleLocalBlur}
               className="w-full bg-transparent border-0 font-mono text-[11px] font-bold text-foreground outline-none tracking-wide select-all focus:text-accent transition-colors"
               placeholder="#3B82F6"
@@ -318,9 +309,10 @@ function ColorConfigRow({
               <div className="flex-1 flex flex-col items-center gap-0.5">
                 <input
                   type="text"
-                  value={localV1}
+                  aria-label={`${label} ${label1}`}
+                  value={displayedTriple[0]}
                   onChange={(e) => handleTripleChange(1, e.target.value)}
-                  onFocus={() => setActiveInputIndex(1)}
+                  onFocus={() => focusTriple(1)}
                   onBlur={handleTripleBlur}
                   className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                 />
@@ -329,9 +321,10 @@ function ColorConfigRow({
               <div className="flex-1 flex flex-col items-center gap-0.5">
                 <input
                   type="text"
-                  value={localV2}
+                  aria-label={`${label} ${label2}`}
+                  value={displayedTriple[1]}
                   onChange={(e) => handleTripleChange(2, e.target.value)}
-                  onFocus={() => setActiveInputIndex(2)}
+                  onFocus={() => focusTriple(2)}
                   onBlur={handleTripleBlur}
                   className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                 />
@@ -340,9 +333,10 @@ function ColorConfigRow({
               <div className="flex-1 flex flex-col items-center gap-0.5">
                 <input
                   type="text"
-                  value={localV3}
+                  aria-label={`${label} ${label3}`}
+                  value={displayedTriple[2]}
                   onChange={(e) => handleTripleChange(3, e.target.value)}
-                  onFocus={() => setActiveInputIndex(3)}
+                  onFocus={() => focusTriple(3)}
                   onBlur={handleTripleBlur}
                   className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                 />
@@ -440,18 +434,12 @@ export default function PaletteSidebar({
   const [baseV3, setBaseV3] = useState("");
   const [baseActiveInputIndex, setBaseActiveInputIndex] = useState<number | null>(null);
 
-  // Sync colorInput and triple inputs when baseColor or colorFormat changes externally
-  useEffect(() => {
-    if (!baseColorFocused) {
-      setColorInput(formatColor(currentPalette.baseColor, colorFormat));
-    }
-    if (baseActiveInputIndex === null) {
-      const [x1, x2, x3] = getTripleValues(currentPalette.baseColor, colorFormat);
-      setBaseV1(String(x1));
-      setBaseV2(String(x2));
-      setBaseV3(String(x3));
-    }
-  }, [currentPalette.baseColor, colorFormat, baseColorFocused, baseActiveInputIndex]);
+  const baseTripleValues = getTripleValues(currentPalette.baseColor, colorFormat).map(String);
+  const displayedBaseTriple = baseActiveInputIndex === null ? baseTripleValues : [baseV1, baseV2, baseV3];
+  const focusBaseTriple = (index: number) => {
+    setBaseV1(baseTripleValues[0]); setBaseV2(baseTripleValues[1]); setBaseV3(baseTripleValues[2]);
+    setBaseActiveInputIndex(index);
+  };
 
   const handleInputChange = (val: string) => {
     if (colorFormat === "hex") {
@@ -511,7 +499,7 @@ export default function PaletteSidebar({
         hex = chroma(n1, n2, n3).hex();
       }
       onChangeBaseColor(hex.toUpperCase());
-    } catch (e) { }
+    } catch { }
   };
 
   const handleBaseTripleBlur = () => {
@@ -523,6 +511,7 @@ export default function PaletteSidebar({
   };
 
   const handleInputBlur = () => {
+    setBaseColorFocused(false);
     const parsed = parseAnyColor(colorInput);
     if (parsed) {
       onChangeBaseColor(parsed);
@@ -537,14 +526,6 @@ export default function PaletteSidebar({
     { label: "HSB", value: "hsb" },
     { label: "HSL", value: "hsl" },
     { label: "RGB", value: "rgb" },
-  ];
-
-  const scaleDropdownOptions = [
-    ...REFERENCE_COLORS.map(c => ({
-      label: c.name,
-      value: c.name,
-      colorHex: c.hex,
-    })),
   ];
 
   return (
@@ -639,9 +620,10 @@ export default function PaletteSidebar({
                   {colorFormat === "hex" ? (
                     <input
                       type="text"
-                      value={colorInput}
+                      aria-label="Primary color value"
+                      value={baseColorFocused ? colorInput : formatColor(currentPalette.baseColor, colorFormat)}
                       onChange={(e) => handleInputChange(e.target.value)}
-                      onFocus={() => setBaseColorFocused(true)}
+                      onFocus={() => { setColorInput(formatColor(currentPalette.baseColor, colorFormat)); setBaseColorFocused(true); }}
                       onBlur={handleInputBlur}
                       className="w-full bg-transparent border-0 font-mono text-xs font-bold text-foreground outline-none tracking-wide select-all focus:text-accent"
                       placeholder="#3B82F6"
@@ -651,9 +633,9 @@ export default function PaletteSidebar({
                       <div className="flex-1 flex flex-col items-center gap-0.5">
                         <input
                           type="text"
-                          value={baseV1}
+                          value={displayedBaseTriple[0]}
                           onChange={(e) => handleBaseTripleChange(1, e.target.value)}
-                          onFocus={() => setBaseActiveInputIndex(1)}
+                          onFocus={() => focusBaseTriple(1)}
                           onBlur={handleBaseTripleBlur}
                           className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                         />
@@ -664,22 +646,22 @@ export default function PaletteSidebar({
                       <div className="flex-1 flex flex-col items-center gap-0.5">
                         <input
                           type="text"
-                          value={baseV2}
+                          value={displayedBaseTriple[1]}
                           onChange={(e) => handleBaseTripleChange(2, e.target.value)}
-                          onFocus={() => setBaseActiveInputIndex(2)}
+                          onFocus={() => focusBaseTriple(2)}
                           onBlur={handleBaseTripleBlur}
                           className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                         />
                         <span className="text-[8px] font-bold text-muted-foreground">
-                          S{colorFormat === "hsl" || colorFormat === "hsb" ? "%" : ""}
+                          {colorFormat === "hsl" || colorFormat === "hsb" ? "S%" : "G"}
                         </span>
                       </div>
                       <div className="flex-1 flex flex-col items-center gap-0.5">
                         <input
                           type="text"
-                          value={baseV3}
+                          value={displayedBaseTriple[2]}
                           onChange={(e) => handleBaseTripleChange(3, e.target.value)}
-                          onFocus={() => setBaseActiveInputIndex(3)}
+                          onFocus={() => focusBaseTriple(3)}
                           onBlur={handleBaseTripleBlur}
                           className="w-full text-center bg-background border border-border/80 rounded-lg py-1 px-1 font-mono text-[10px] font-bold text-foreground focus:border-accent outline-none"
                         />
@@ -694,7 +676,7 @@ export default function PaletteSidebar({
                 <CustomDropdown
                   value={colorFormat}
                   options={formatOptions}
-                  onChange={(val) => setColorFormat(val as any)}
+                  onChange={(val) => setColorFormat(val as ColorConfigRowProps["colorFormat"])}
                   widthClass="w-[75px]"
                 />
               </div>

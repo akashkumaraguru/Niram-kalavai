@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, FolderHeart, Sliders, Sparkles, Trash2, Plus, Calendar, Type } from "lucide-react";
+import { ChevronDown, FolderHeart, Sliders, Trash2, Plus, Type } from "lucide-react";
 import { SCALES, TypographySystem } from "@/lib/typographyUtils";
 
 interface CustomDropdownProps {
@@ -270,7 +270,7 @@ export default function TypographySidebar({
               <CustomDropdown
                 value={system.rounding}
                 options={ROUNDINGS}
-                onChange={(val) => onChangeSystem({ rounding: val as any })}
+                onChange={(val) => onChangeSystem({ rounding: val as TypographySystem["rounding"] })}
                 isOpen={activeDropdown === "rounding"}
                 onToggle={(open) => setActiveDropdown(open ? "rounding" : null)}
                 widthClass="w-[160px]"
@@ -283,7 +283,7 @@ export default function TypographySidebar({
               <CustomDropdown
                 value={system.namingConvention}
                 options={CONVENTIONS}
-                onChange={(val) => onChangeSystem({ namingConvention: val as any })}
+                onChange={(val) => onChangeSystem({ namingConvention: val as TypographySystem["namingConvention"] })}
                 isOpen={activeDropdown === "namingConvention"}
                 onToggle={(open) => setActiveDropdown(open ? "namingConvention" : null)}
                 widthClass="w-[160px]"
@@ -296,7 +296,7 @@ export default function TypographySidebar({
               <CustomDropdown
                 value={system.responsiveScale}
                 options={RESPONSIVE_MODES}
-                onChange={(val) => onChangeSystem({ responsiveScale: val as any })}
+                onChange={(val) => onChangeSystem({ responsiveScale: val as TypographySystem["responsiveScale"] })}
                 isOpen={activeDropdown === "responsiveScale"}
                 onToggle={(open) => setActiveDropdown(open ? "responsiveScale" : null)}
                 widthClass="w-[160px]"
@@ -321,6 +321,12 @@ export default function TypographySidebar({
               {savedPresets.map((preset) => (
                 <div
                   key={preset.name}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Load ${preset.name} system`}
+                  onKeyDown={event => {
+                    if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onLoadPreset(preset); }
+                  }}
                   onClick={() => onLoadPreset(preset)}
                   className="group relative p-3 rounded-xl border border-border bg-input/30 hover:bg-secondary/70 hover:border-accent/40 transition-all cursor-pointer"
                 >
@@ -340,7 +346,7 @@ export default function TypographySidebar({
                         e.stopPropagation();
                         onDeletePreset(preset.name);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive rounded transition-all hover:bg-input"
+                      className="opacity-100 p-1 text-muted-foreground hover:text-destructive rounded transition-all hover:bg-input"
                       title="Delete saved system"
                     >
                       <Trash2 size={12} />

@@ -97,6 +97,7 @@ export default function ControlsSidebar({
 
       {/* Slider Track */}
       <ColorStopsSlider
+        updateStopById={updateStopById}
         gradient={gradient}
         activeStopId={activeStopId}
         setActiveStopId={setActiveStopId}

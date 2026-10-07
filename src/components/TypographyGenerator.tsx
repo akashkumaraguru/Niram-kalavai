@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
+import { readStoredList } from "@/lib/validation";
+import { restoreStyleDefinitions, validateTypographyPreset } from "@/lib/presetStorage";
 import Header from "./Header";
 import TypographySidebar from "./TypographySidebar";
 import TypographyPreviewArea from "./TypographyPreviewArea";
@@ -42,7 +44,7 @@ export default function TypographyGenerator({
   const [overrides, setOverrides] = useState<Record<string, Partial<TypographyStyle>>>({});
 
   // Saved presets list
-  const [savedPresets, setSavedPresets] = useState<TypographySystem[]>([]);
+  const [savedPresets, setSavedPresets] = useState<TypographySystem[]>(() => readStoredList("niram-kalavai-saved-typography", validateTypographyPreset));
 
   // Export modal state
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
@@ -64,21 +66,9 @@ export default function TypographyGenerator({
     styles,
   };
 
-  // Load presets on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("niram-kalavai-saved-typography");
-        if (stored) {
-          setSavedPresets(JSON.parse(stored));
-        }
-      } catch (err) {
-        console.error("Failed to load saved typography systems:", err);
-      }
-    }
-  }, []);
-
   const handleSavePreset = useCallback((presetName: string) => {
+    presetName = presetName.trim().slice(0, 64);
+    if (!presetName) { toast.error("Enter a system name"); return; }
     // Check if name already exists
     if (savedPresets.some((p) => p.name.toLowerCase() === presetName.toLowerCase())) {
       toast.error(`A system named "${presetName}" already exists.`);
@@ -94,6 +84,7 @@ export default function TypographyGenerator({
       rounding,
       namingConvention,
       responsiveScale,
+      styleDefs,
       // Store style snapshots if they have overrides
       styles: styles.map((st) => ({
         ...st,
@@ -102,23 +93,23 @@ export default function TypographyGenerator({
     };
 
     const updated = [newPreset, ...savedPresets];
-    setSavedPresets(updated);
     try {
       localStorage.setItem("niram-kalavai-saved-typography", JSON.stringify(updated));
+      setSavedPresets(updated);
       toast.success(`Successfully saved "${presetName}"!`);
       setName(presetName);
-    } catch (err) {
+    } catch {
       toast.error("Failed to save preset to storage");
     }
-  }, [fontFamily, baseSize, scaleRatio, scaleMethod, rounding, namingConvention, responsiveScale, styles, overrides, savedPresets]);
+  }, [fontFamily, baseSize, scaleRatio, scaleMethod, rounding, namingConvention, responsiveScale, styles, styleDefs, overrides, savedPresets]);
 
   const handleDeletePreset = useCallback((presetName: string) => {
     const updated = savedPresets.filter((p) => p.name !== presetName);
-    setSavedPresets(updated);
     try {
       localStorage.setItem("niram-kalavai-saved-typography", JSON.stringify(updated));
+      setSavedPresets(updated);
       toast.success(`Deleted typography system "${presetName}"`);
-    } catch (err) {
+    } catch {
       toast.error("Failed to delete preset from storage");
     }
   }, [savedPresets]);
@@ -133,17 +124,7 @@ export default function TypographyGenerator({
     setNamingConvention(preset.namingConvention || "camelCase");
     setResponsiveScale(preset.responsiveScale || "none");
 
-    // Reconstruct styleDefs
-    const newDefs = preset.styles.map((st) => ({
-      id: st.id,
-      name: st.name,
-      step: st.step,
-      weight: st.fontWeight,
-      lh: st.lineHeight,
-      ls: st.letterSpacing,
-      isCustom: st.isCustom,
-    }));
-    setStyleDefs(newDefs);
+    setStyleDefs(restoreStyleDefinitions(preset));
 
     // Reconstruct overrides
     const newOverrides: Record<string, Partial<TypographyStyle>> = {};
@@ -172,6 +153,11 @@ export default function TypographyGenerator({
   }, []);
 
   const handleChangeStyleOverride = useCallback((styleId: string, patch: Partial<TypographyStyle>) => {
+    const bounds = { sizePx: [1, 100000], lineHeight: [0.5, 3], letterSpacing: [-0.2, 0.5], fontWeight: [100, 900] } as const;
+    for (const key of Object.keys(bounds) as (keyof typeof bounds)[]) {
+      const value = patch[key];
+      if (value !== undefined && (!Number.isFinite(value) || value < bounds[key][0] || value > bounds[key][1])) return;
+    }
     setOverrides((prev) => ({
       ...prev,
       [styleId]: {
@@ -191,8 +177,7 @@ export default function TypographyGenerator({
 
   const handleResetAllOverrides = useCallback(() => {
     setOverrides({});
-    setStyleDefs(STYLE_DEFAULTS);
-    toast.success("Reset all styles and manual overrides");
+    toast.success("Reset all manual overrides");
   }, []);
 
   const handleAddStyle = useCallback(() => {
@@ -278,7 +263,6 @@ export default function TypographyGenerator({
         system={currentSystem}
         onChangeStyleOverride={handleChangeStyleOverride}
         onRemoveStyleOverride={handleRemoveStyleOverride}
-        onResetAllOverrides={handleResetAllOverrides}
         onAddStyle={handleAddStyle}
         onDeleteStyle={handleDeleteStyle}
         onChangeStyleName={handleChangeStyleName}

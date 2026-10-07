@@ -6,6 +6,7 @@ import { GradientConfig } from "../lib/gradientUtils";
 interface ColorStopsSliderProps {
   gradient: GradientConfig;
   activeStopId: string;
+  updateStopById: (id: string, patch: { position: number }) => void;
   setActiveStopId: (id: string) => void;
   handleDrag: (stopId: string, e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => void;
   isExtracting: boolean;
@@ -15,6 +16,7 @@ interface ColorStopsSliderProps {
 export default function ColorStopsSlider({
   gradient,
   activeStopId,
+  updateStopById,
   setActiveStopId,
   handleDrag,
   isExtracting,
@@ -36,6 +38,21 @@ export default function ColorStopsSlider({
         {gradient.stops.map((s) => (
           <div
             key={s.id}
+            role="slider"
+            tabIndex={0}
+            aria-label={`Position of ${s.color} color stop`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={s.position}
+            onFocus={() => setActiveStopId(s.id)}
+            onKeyDown={event => {
+              const delta = event.shiftKey ? 10 : 1;
+              const positions: Record<string, number> = { ArrowLeft: s.position - delta, ArrowDown: s.position - delta, ArrowRight: s.position + delta, ArrowUp: s.position + delta, Home: 0, End: 100 };
+              if (event.key in positions) {
+                event.preventDefault();
+                updateStopById(s.id, { position: Math.max(0, Math.min(100, positions[event.key])) });
+              }
+            }}
             className={`stop-handle-pin ${activeStopId === s.id ? "active" : ""}`}
             style={{ left: `${s.position}%` }}
             onMouseDown={(e) => {
